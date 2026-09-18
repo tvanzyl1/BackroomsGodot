@@ -1,0 +1,29 @@
+; Engine configuration file.
+; Backrooms Maze - Godot 4.7.2
+config_version=5
+
+[application]
+config/name="Backrooms: Yellow Maze"
+run/main_scene="res://main.tscn"
+
+[display]
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/size/window_width_override=1280
+window/size/window_height_override=720
+window/stretch/mode="canvas_items"
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+environment/defaults/default_clear_color=Color(0.025, 0.02, 0.015, 1)
+
+[input]
+move_forward={"deadzone": 0.5, "events": [Object(InputEventKey,"physical_keycode":87)]}
+move_backward={"deadzone": 0.5, "events": [Object(InputEventKey,"physical_keycode":83)]}
+move_left={"deadzone": 0.5, "events": [Object(InputEventKey,"physical_keycode":65)]}
+move_right={"deadzone": 0.5, "events": [Object(InputEventKey,"physical_keycode":68)]}
+new_game={"deadzone": 0.5, "events": [Object(InputEventKey,"physical_keycode":82)]}
+
+[gui]
+theme/default_font_multichannel_signed_distance_field=true
