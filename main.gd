@@ -14,6 +14,7 @@ var rng := RandomNumberGenerator.new()
 var generation: int = 0
 var status_label: Label
 var seed_label: Label
+var quit_dialog: ConfirmationDialog
 
 var wall_material: StandardMaterial3D
 var floor_material: StandardMaterial3D
@@ -29,6 +30,9 @@ func _ready() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("new_game"):
 		new_game()
+	if event.is_action_pressed("quit_game") and not quit_dialog.visible:
+		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+		quit_dialog.popup_centered()
 	if event is InputEventMouseButton and event.pressed:
 		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
@@ -202,7 +206,7 @@ func _create_hud() -> void:
 	status_label.add_theme_font_size_override("font_size", 16)
 	panel.add_child(status_label)
 	var help := Label.new()
-	help.text = "WASD  MOVE     MOUSE  LOOK     R  NEW MAZE"
+	help.text = "WASD  MOVE     MOUSE  LOOK     R  NEW MAZE     Q  QUIT"
 	help.position = Vector2(24.0, 670.0)
 	help.add_theme_color_override("font_color", Color(0.62, 0.56, 0.42, 0.9))
 	help.add_theme_font_size_override("font_size", 12)
@@ -213,3 +217,13 @@ func _create_hud() -> void:
 	crosshair.add_theme_color_override("font_color", Color(1.0, 0.92, 0.7, 0.75))
 	crosshair.add_theme_font_size_override("font_size", 18)
 	layer.add_child(crosshair)
+	quit_dialog = ConfirmationDialog.new()
+	quit_dialog.title = "Leave the Maze?"
+	quit_dialog.dialog_text = "Are you sure you want to quit?"
+	quit_dialog.ok_button_text = "Quit"
+	quit_dialog.cancel_button_text = "Stay"
+	quit_dialog.confirmed.connect(_quit_game)
+	layer.add_child(quit_dialog)
+
+func _quit_game() -> void:
+	get_tree().quit()

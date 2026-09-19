@@ -1,6 +1,10 @@
 78098b89c88a74ebe8c20117b8754620
-::res://::1789724338
-main.gd::GDScript::9147705478302887444::1789724354::0::1::::<>Node3D<><>0<>0<><>::
+::res://::1789793245
+Howler.gd::GDScript::8495347153886575429::1789729377::0::1::::Howler<>CharacterBody3D<><>0<>0<><>::
+Howler.md::TextFile::-1::1789724860::0::1::::<><><>0<>0<><>::
+Howler.tscn::PackedScene::-1::1789725173::0::1::::<><><>0<>0<><>::res://Howler.gd
+main.gd::GDScript::9147705478302887444::1789729687::0::1::::<>Node3D<><>0<>0<><>::
 main.tscn::PackedScene::-1::1789724041::0::1::::<><><>0<>0<><>::res://main.gd
-player.gd::GDScript::1905602559184076058::1789724354::0::1::::MazePlayer<>CharacterBody3D<><>0<>0<><>::
+NoiseManager.gd::GDScript::4000871765872474931::1789725167::0::1::::<>Node<><>0<>0<><>::
+player.gd::GDScript::1905602559184076058::1789730307::0::1::::MazePlayer<>CharacterBody3D<><>0<>0<><>::
 README.md::TextFile::-1::1789724041::0::1::::<><><>0<>0<><>::

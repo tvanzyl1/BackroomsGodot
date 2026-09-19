@@ -4,10 +4,19 @@ extends CharacterBody3D
 @export var move_speed: float = 4.5
 @export var mouse_sensitivity: float = 0.0025
 @export var acceleration: float = 18.0
+@export var flashlight_jitter_min_delay: float = 2.5
+@export var flashlight_jitter_max_delay: float = 6.0
+@export var flashlight_jitter_duration: float = 0.08
+@export var flashlight_jitter_min_energy: float = 0.2
 
 var head: Node3D
 var camera: Camera3D
 var flashlight: SpotLight3D
+var flashlight_enabled: bool = true
+var flashlight_energy: float = 5.0
+var flashlight_jitter_time: float = 0.0
+var flashlight_jitter_delay: float = 0.0
+var rng := RandomNumberGenerator.new()
 var pitch: float = 0.0
 var input_enabled: bool = true
 
@@ -24,7 +33,8 @@ func setup() -> void:
 	flashlight = SpotLight3D.new()
 	flashlight.name = "Flashlight"
 	flashlight.light_color = Color(1.0, 0.86, 0.63)
-	flashlight.light_energy = 5.0
+	flashlight_energy = 5.0
+	flashlight.light_energy = flashlight_energy
 	flashlight.spot_range = 16.0
 	flashlight.spot_angle = 32.0
 	flashlight.shadow_enabled = true
@@ -41,7 +51,9 @@ func setup() -> void:
 	camera.position.z = 0.02
 
 func _ready() -> void:
+	rng.randomize()
 	setup()
+	_schedule_flashlight_jitter()
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -49,8 +61,29 @@ func _unhandled_input(event: InputEvent) -> void:
 		rotate_y(-event.relative.x * mouse_sensitivity)
 		pitch = clamp(pitch - event.relative.y * mouse_sensitivity, -1.35, 1.35)
 		head.rotation.x = pitch
+	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F:
+		flashlight_enabled = not flashlight_enabled
+		flashlight.visible = flashlight_enabled
+		flashlight.light_energy = flashlight_energy
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
 		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+
+func _process(delta: float) -> void:
+	if not flashlight_enabled:
+		return
+	if flashlight_jitter_time > 0.0:
+		flashlight_jitter_time -= delta
+		flashlight.light_energy = flashlight_energy * rng.randf_range(flashlight_jitter_min_energy, 0.65)
+		if flashlight_jitter_time <= 0.0:
+			flashlight.light_energy = flashlight_energy
+			_schedule_flashlight_jitter()
+	else:
+		flashlight_jitter_delay -= delta
+		if flashlight_jitter_delay <= 0.0:
+			flashlight_jitter_time = flashlight_jitter_duration
+
+func _schedule_flashlight_jitter() -> void:
+	flashlight_jitter_delay = rng.randf_range(flashlight_jitter_min_delay, flashlight_jitter_max_delay)
 
 func _physics_process(delta: float) -> void:
 	if not input_enabled:
