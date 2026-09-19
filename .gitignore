@@ -1,1 +1,12 @@
 *.exe
+# Godot generated files
+.godot/
+
+# Exported builds
+build/
+dist/
+WebGame/
+
+# OS/editor junk
+.DS_Store
+Thumbs.db
