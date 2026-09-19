@@ -21,6 +21,8 @@ var status_label: Label
 var seed_label: Label
 var health_label: Label
 var health_bar: ProgressBar
+var battery_label: Label
+var battery_bar: ProgressBar
 var feedback_overlay: Control
 var death_overlay: ColorRect
 var death_message: Label
@@ -29,6 +31,9 @@ var end_message: Label
 var new_game_button: Button
 var start_overlay: ColorRect
 var start_message: Label
+var start_button: Button
+var selected_battery_mode: int = MazePlayer.BatteryMode.DRAIN_AND_RECHARGE_WHEN_OFF
+var battery_mode_buttons: Array[Button] = []
 var quit_dialog: ConfirmationDialog
 var roof_lights: Array[Dictionary] = []
 var noise_manager: Node
@@ -322,7 +327,11 @@ func _spawn_player() -> void:
 	player.name = "Player"
 	add_child(player)
 	player.position = _cell_position(1, 1) + Vector3(0.0, 0.03, 0.0)
+	player.set_battery_mode(selected_battery_mode)
+	player.flashlight_enabled = false
+	player._update_flashlight_visibility()
 	player.health_changed.connect(_update_health_bar)
+	player.battery_changed.connect(_update_battery_bar)
 	player.damage_taken.connect(_show_damage_feedback)
 	player.health_restored.connect(_show_heal_feedback)
 	player.died.connect(_on_player_died)
@@ -342,6 +351,13 @@ func _update_health_bar(current_health: float, maximum_health: float) -> void:
 	health_bar.max_value = maximum_health
 	health_bar.value = current_health
 	health_label.text = "HEALTH  %d%%" % roundi(current_health / maximum_health * 100.0)
+
+func _update_battery_bar(current_battery: float, maximum_battery: float) -> void:
+	if battery_bar == null:
+		return
+	battery_bar.max_value = maximum_battery
+	battery_bar.value = current_battery
+	battery_label.text = "BATTERY  %d%%" % roundi(current_battery / maximum_battery * 100.0)
 
 func _on_player_died() -> void:
 	if game_finished or game_over:
@@ -374,9 +390,13 @@ func _show_end_state(title: String, subtitle: String) -> void:
 
 func _start_game() -> void:
 	game_started = true
+	player.set_battery_mode(selected_battery_mode)
 	player.input_enabled = true
-	howler.set_process(true)
-	howler.set_physics_process(true)
+	player.flashlight_enabled = true
+	player._update_flashlight_visibility()
+	if is_instance_valid(howler):
+		howler.set_process(true)
+		howler.set_physics_process(true)
 	start_overlay.visible = false
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
@@ -445,7 +465,7 @@ func _create_hud() -> void:
 	var panel := ColorRect.new()
 	panel.color = Color(0.04, 0.035, 0.025, 0.82)
 	panel.position = Vector2(24.0, 24.0)
-	panel.size = Vector2(250.0, 84.0)
+	panel.size = Vector2(250.0, 124.0)
 	layer.add_child(panel)
 	seed_label = Label.new()
 	seed_label.position = Vector2(16.0, 10.0)
@@ -483,6 +503,32 @@ func _create_hud() -> void:
 	health_fill.bg_color = Color(0.85, 0.22, 0.1, 1.0)
 	health_bar.add_theme_stylebox_override("fill", health_fill)
 	panel.add_child(health_bar)
+	battery_label = Label.new()
+	battery_label.position = Vector2(16.0, 85.0)
+	battery_label.add_theme_color_override("font_color", Color(0.8, 0.82, 0.95))
+	battery_label.add_theme_font_size_override("font_size", 10)
+	battery_label.text = "BATTERY  100%"
+	panel.add_child(battery_label)
+	battery_bar = ProgressBar.new()
+	battery_bar.name = "BatteryBar"
+	battery_bar.position = Vector2(16.0, 97.0)
+	battery_bar.size = Vector2(218.0, 10.0)
+	battery_bar.show_percentage = false
+	battery_bar.min_value = 0.0
+	battery_bar.max_value = 100.0
+	battery_bar.value = 100.0
+	var battery_background := StyleBoxFlat.new()
+	battery_background.bg_color = Color(0.08, 0.1, 0.12, 0.95)
+	battery_background.border_width_left = 1
+	battery_background.border_width_top = 1
+	battery_background.border_width_right = 1
+	battery_background.border_width_bottom = 1
+	battery_background.border_color = Color(0.35, 0.45, 0.58, 0.9)
+	battery_bar.add_theme_stylebox_override("background", battery_background)
+	var battery_fill := StyleBoxFlat.new()
+	battery_fill.bg_color = Color(0.52, 0.71, 1.0, 1.0)
+	battery_bar.add_theme_stylebox_override("fill", battery_fill)
+	panel.add_child(battery_bar)
 	var help := Label.new()
 	help.text = "WASD  MOVE     MOUSE  LOOK     R  NEW MAZE     Q  QUIT"
 	help.position = Vector2(24.0, 670.0)
@@ -539,9 +585,15 @@ func _create_hud() -> void:
 	new_game_button = Button.new()
 	new_game_button.name = "NewGameButton"
 	new_game_button.text = "NEW GAME"
-	new_game_button.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	new_game_button.position = Vector2(-110.0, 58.0)
+	new_game_button.anchor_left = 0.5
+	new_game_button.anchor_top = 0.5
+	new_game_button.anchor_right = 0.5
+	new_game_button.anchor_bottom = 0.5
 	new_game_button.size = Vector2(220.0, 48.0)
+	new_game_button.offset_left = -110.0
+	new_game_button.offset_top = 58.0
+	new_game_button.offset_right = 110.0
+	new_game_button.offset_bottom = 106.0
 	new_game_button.add_theme_font_size_override("font_size", 18)
 	new_game_button.pressed.connect(new_game)
 	end_overlay.add_child(new_game_button)
@@ -554,16 +606,54 @@ func _create_hud() -> void:
 	layer.add_child(start_overlay)
 	start_message = Label.new()
 	start_message.name = "StartMessage"
-	start_message.text = "YOU'VE LANDED IN A STRANGE BACKROOMS\n\nPRESS ANY KEY TO START"
+	start_message.text = "YOU'VE LANDED IN A STRANGE BACKROOMS\n\nCHOOSE FLASHLIGHT POWER MODE"
 	start_message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	start_message.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	start_message.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	start_message.position = Vector2(-380.0, -120.0)
-	start_message.size = Vector2(760.0, 240.0)
+	start_message.position = Vector2(-380.0, -185.0)
+	start_message.size = Vector2(760.0, 130.0)
 	start_message.add_theme_color_override("font_color", Color(1.0, 0.9, 0.7))
 	start_message.add_theme_font_size_override("font_size", 28)
 	start_message.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	start_overlay.add_child(start_message)
+	for index in range(3):
+		var button := Button.new()
+		button.text = [
+			"NEVER DRAINS",
+			"DRAINS, RECHARGES OFF",
+			"DRAINS, NO RECHARGE",
+		][index]
+		button.anchor_left = 0.5
+		button.anchor_top = 0.5
+		button.anchor_right = 0.5
+		button.anchor_bottom = 0.5
+		button.size = Vector2(300.0, 42.0)
+		button.offset_left = -150.0
+		button.offset_top = -35.0 + index * 54.0
+		button.offset_right = 150.0
+		button.offset_bottom = 7.0 + index * 54.0
+		button.pressed.connect(func() -> void:
+			_selected_start_mode(index)
+		)
+		button.add_theme_font_size_override("font_size", 16)
+		start_overlay.add_child(button)
+		battery_mode_buttons.append(button)
+	_selected_start_mode(selected_battery_mode)
+	start_button = Button.new()
+	start_button.name = "StartButton"
+	start_button.text = "START"
+	start_button.anchor_left = 0.5
+	start_button.anchor_top = 0.5
+	start_button.anchor_right = 0.5
+	start_button.anchor_bottom = 0.5
+	start_button.size = Vector2(220.0, 50.0)
+	start_button.offset_left = -110.0
+	start_button.offset_top = 154.0
+	start_button.offset_right = 110.0
+	start_button.offset_bottom = 204.0
+	start_button.add_theme_font_size_override("font_size", 20)
+	start_button.pressed.connect(_start_game)
+	start_overlay.add_child(start_button)
 	quit_dialog = ConfirmationDialog.new()
 	quit_dialog.title = "Leave the Maze?"
 	quit_dialog.dialog_text = "Are you sure you want to quit?"
@@ -571,6 +661,14 @@ func _create_hud() -> void:
 	quit_dialog.cancel_button_text = "Stay"
 	quit_dialog.confirmed.connect(_quit_game)
 	layer.add_child(quit_dialog)
+
+func _selected_start_mode(mode: int) -> void:
+	selected_battery_mode = clampi(mode, MazePlayer.BatteryMode.NEVER_DRAIN, MazePlayer.BatteryMode.DRAIN_NO_RECHARGE)
+	if is_instance_valid(player):
+		player.set_battery_mode(selected_battery_mode)
+	for index in range(battery_mode_buttons.size()):
+		var button: Button = battery_mode_buttons[index]
+		button.modulate = Color(1.0, 1.0, 1.0, 1.0 if index == selected_battery_mode else 0.6)
 
 func _quit_game() -> void:
 	get_tree().quit()

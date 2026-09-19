@@ -28,3 +28,8 @@ To-do list:
 10. [x] Health orbs should only be picked up if the player health is less than 100. 
 11. [x] Start state with a message "You've landed in a strange backrooms, press any key to start".
 12. [x] Add some "oversized" rooms so the maze is not just coridors.
+13. [x] Implement flashlight battery life. We need
+13.1. [x] A battery life bar under the health bar.
+13.2. [x] Every second the flashlight is on, the battery reduces with 1%. When off, no reduction.
+13.3. [x] Three battery game states, 1. Battery never depletes, 2. Battery depletes when on, but recharges 1% per second it is off, 3. Battery depletes when on, but does not recharge.
+13.4. [x] The battery game states can be selected at the start of the game. This will help indicate difficulty.

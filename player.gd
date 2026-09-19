@@ -2,14 +2,22 @@ class_name MazePlayer
 extends CharacterBody3D
 
 signal health_changed(current_health: float, maximum_health: float)
+signal battery_changed(current_battery: float, maximum_battery: float)
 signal died
 signal damage_taken
 signal health_restored
+
+enum BatteryMode {
+    NEVER_DRAIN = 0,
+    DRAIN_AND_RECHARGE_WHEN_OFF = 1,
+    DRAIN_NO_RECHARGE = 2,
+}
 
 @export var move_speed: float = 4.5
 @export var mouse_sensitivity: float = 0.0025
 @export var acceleration: float = 18.0
 @export var maximum_health: float = 100.0
+@export var maximum_battery: float = 100.0
 @export var flashlight_jitter_min_delay: float = 2.5
 @export var flashlight_jitter_max_delay: float = 6.0
 @export var flashlight_jitter_duration: float = 0.08
@@ -20,6 +28,8 @@ var camera: Camera3D
 var flashlight: SpotLight3D
 var flashlight_enabled: bool = true
 var flashlight_energy: float = 5.0
+var current_battery: float = 100.0
+var battery_mode: int = BatteryMode.DRAIN_AND_RECHARGE_WHEN_OFF
 var flashlight_jitter_time: float = 0.0
 var flashlight_jitter_delay: float = 0.0
 var rng := RandomNumberGenerator.new()
@@ -61,10 +71,20 @@ func setup() -> void:
 func _ready() -> void:
 	rng.randomize()
 	current_health = maximum_health
+	current_battery = maximum_battery
 	setup()
 	health_changed.emit(current_health, maximum_health)
+	battery_changed.emit(current_battery, maximum_battery)
 	_schedule_flashlight_jitter()
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+
+func set_battery_mode(mode: int) -> void:
+	battery_mode = clampi(mode, BatteryMode.NEVER_DRAIN, BatteryMode.DRAIN_NO_RECHARGE)
+	current_battery = maximum_battery
+	flashlight_enabled = false
+	flashlight.visible = false
+	flashlight.light_energy = 0.0
+	battery_changed.emit(current_battery, maximum_battery)
 
 func take_damage(amount: float) -> void:
 	if amount <= 0.0 or current_health <= 0.0:
@@ -90,25 +110,51 @@ func _unhandled_input(event: InputEvent) -> void:
 		pitch = clamp(pitch - event.relative.y * mouse_sensitivity, -1.35, 1.35)
 		head.rotation.x = pitch
 	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F:
+		if current_battery <= 0.0 and battery_mode != BatteryMode.NEVER_DRAIN:
+			flashlight_enabled = false
+			_update_flashlight_visibility()
+			return
 		flashlight_enabled = not flashlight_enabled
-		flashlight.visible = flashlight_enabled
-		flashlight.light_energy = flashlight_energy
+		_update_flashlight_visibility()
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
 		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
 func _process(delta: float) -> void:
-	if not flashlight_enabled:
+	if battery_mode == BatteryMode.NEVER_DRAIN:
+		current_battery = maximum_battery
+		flashlight.light_energy = flashlight_energy if flashlight_enabled else 0.0
+		flashlight.visible = flashlight_enabled
+		battery_changed.emit(current_battery, maximum_battery)
 		return
-	if flashlight_jitter_time > 0.0:
-		flashlight_jitter_time -= delta
-		flashlight.light_energy = flashlight_energy * rng.randf_range(flashlight_jitter_min_energy, 0.65)
-		if flashlight_jitter_time <= 0.0:
-			flashlight.light_energy = flashlight_energy
-			_schedule_flashlight_jitter()
-	else:
-		flashlight_jitter_delay -= delta
-		if flashlight_jitter_delay <= 0.0:
-			flashlight_jitter_time = flashlight_jitter_duration
+	if flashlight_enabled and current_battery > 0.0:
+		current_battery = maxf(0.0, current_battery - delta)
+		battery_changed.emit(current_battery, maximum_battery)
+		if current_battery <= 0.0:
+			flashlight_enabled = false
+			_update_flashlight_visibility()
+			return
+		if flashlight_jitter_time > 0.0:
+			flashlight_jitter_time -= delta
+			flashlight.light_energy = flashlight_energy * rng.randf_range(flashlight_jitter_min_energy, 0.65)
+			if flashlight_jitter_time <= 0.0:
+				flashlight.light_energy = flashlight_energy
+				_schedule_flashlight_jitter()
+		else:
+			flashlight_jitter_delay -= delta
+			if flashlight_jitter_delay <= 0.0:
+				flashlight_jitter_time = flashlight_jitter_duration
+	elif battery_mode == BatteryMode.DRAIN_AND_RECHARGE_WHEN_OFF and current_battery < maximum_battery:
+		current_battery = minf(maximum_battery, current_battery + delta)
+		battery_changed.emit(current_battery, maximum_battery)
+
+func _update_flashlight_visibility() -> void:
+	var should_be_visible := flashlight_enabled and current_battery > 0.0
+	flashlight.visible = should_be_visible
+	flashlight.light_energy = flashlight_energy if should_be_visible else 0.0
+	if current_battery <= 0.0 and flashlight_enabled and battery_mode != BatteryMode.NEVER_DRAIN:
+		flashlight_enabled = false
+		flashlight.visible = false
+		flashlight.light_energy = 0.0
 
 func _schedule_flashlight_jitter() -> void:
 	flashlight_jitter_delay = rng.randf_range(flashlight_jitter_min_delay, flashlight_jitter_max_delay)
