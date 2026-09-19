@@ -339,11 +339,24 @@ func _spawn_howler() -> void:
 	howler = howler_scene.instantiate()
 	howler.name = "Howler"
 	add_child(howler)
-	var spawn_offset := Vector3(0.0, 0.05, -1.4)
-	howler.position = player.position + spawn_offset
+	howler.position = _choose_howler_spawn_position()
 	howler.look_at(player.global_position, Vector3.UP)
 	if howler.has_method("set_player_reference"):
 		howler.set_player_reference(player)
+
+func _choose_howler_spawn_position() -> Vector3:
+	var minimum_distance := CELL_SIZE * 3.0
+	var candidates: Array[Vector3] = []
+	for z in range(1, MAZE_SIZE - 1):
+		for x in range(1, MAZE_SIZE - 1):
+			if maze[z][x]:
+				continue
+			var candidate := _cell_position(x, z)
+			if candidate.distance_to(player.global_position) >= minimum_distance:
+				candidates.append(candidate)
+	if not candidates.is_empty():
+		return candidates[rng.randi_range(0, candidates.size() - 1)] + Vector3(0.0, 0.05, 0.0)
+	return player.position + Vector3(0.0, 0.05, -1.4)
 
 func _cell_position(x: int, z: int) -> Vector3:
 	return Vector3((x - MAZE_SIZE / 2.0 + 0.5) * CELL_SIZE, 0.0, (z - MAZE_SIZE / 2.0 + 0.5) * CELL_SIZE)

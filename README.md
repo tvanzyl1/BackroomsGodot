@@ -23,3 +23,8 @@ To-do list:
 5.3 [x] Wider view detection.
 6. [x] A win state; when getting to the ending a message showing that you've exited the backrooms.
 7. [x] A death state. When your health is 0, the camera falls to the ground and red covers the screen. Message pops up that you are dead and asks if you want to start again.
+8. [x] Howler should now start in a random spot in the map.
+9. Howler should take 40% of player health on collision. 
+10. Health orbs should only be picked up if the player health is less than 100. 
+11. Start state with a message "You've landed in a strange backrooms, press any key to start".
+12. Add some "oversized" rooms so the maze is not just coridors.
