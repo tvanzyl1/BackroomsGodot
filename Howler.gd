@@ -27,9 +27,15 @@ enum State {
 
 @export_group("Vision")
 @export var vision_range: float = 18.0
-@export var vision_angle: float = 90.0
+@export var vision_angle: float = 110.0
 @export var vision_check_interval: float = 0.2
 @export var player_lose_sight_threshold: float = 0.2
+
+@export_group("Hearing")
+@export var hearing_range: float = 32.0
+@export var minimum_heard_loudness: float = 0.12
+@export var investigate_loudness: float = 0.28
+@export var stalk_loudness: float = 0.65
 
 @export_group("Patrol / Idle")
 @export var patrol_radius: float = 20.0
@@ -330,14 +336,20 @@ func _set_bone_rotation(bone_name: StringName, axis: Vector3, angle: float) -> v
 func _setup_noise_manager() -> void:
 	var existing := get_tree().get_first_node_in_group("noise_manager")
 	if existing:
-		_noise_manager = existing
+		if existing.has_method("get_recent_noise") and existing.has_method("emit_noise"):
+			_noise_manager = existing
+		else:
+			existing.remove_from_group("noise_manager")
+			_noise_manager = NoiseManager.new()
+			_noise_manager.name = "NoiseManager"
+			_noise_manager.add_to_group("noise_manager")
+			get_tree().root.call_deferred("add_child", _noise_manager)
 		if _noise_manager.has_signal("noise_emitted") and not _noise_manager.is_connected("noise_emitted", _on_noise_emitted):
 			_noise_manager.noise_emitted.connect(_on_noise_emitted)
 		return
-	var manager := Node.new()
+	var manager: Node = NoiseManager.new()
 	manager.name = "NoiseManager"
 	manager.add_to_group("noise_manager")
-	manager.set_script(load("res://NoiseManager.gd"))
 	_noise_manager = manager
 	if get_tree() and get_tree().root:
 		get_tree().root.call_deferred("add_child", _noise_manager)
@@ -349,13 +361,15 @@ func _on_noise_emitted(position: Vector3, loudness: float, source: StringName) -
 		return
 	if player == null:
 		player = get_tree().get_first_node_in_group("player")
-	if global_position.distance_to(position) <= max(vision_range * 1.8, 20.0):
+	var distance := global_position.distance_to(position)
+	var perceived_loudness := loudness * clampf(1.0 - distance / hearing_range, 0.0, 1.0)
+	if perceived_loudness >= minimum_heard_loudness:
 		_noise_position = position
-		if current_state == State.IDLE or current_state == State.PATROL or current_state == State.SEARCH:
-			if loudness >= 0.5:
-				_set_state(State.INVESTIGATE)
-				investigate_timer = investigate_timeout
-				_target_position = position
+		last_known_player_position = position if source == &"player_movement" else last_known_player_position
+		_target_position = position
+		if current_state in [State.IDLE, State.PATROL, State.SEARCH]:
+			_set_state(State.STALK if perceived_loudness >= stalk_loudness else State.INVESTIGATE)
+			investigate_timer = investigate_timeout
 
 func _update_state_logic(delta: float) -> void:
 	match current_state:
@@ -664,9 +678,11 @@ func _emit_howl_if_possible(id: String) -> void:
 		alert_timer = rng.randf_range(howl_delay_min, howl_delay_max)
 
 func _handle_noise_reactions() -> void:
-	if _noise_manager == null:
+	if _noise_manager == null or not _noise_manager.has_method("get_recent_noise"):
+		_setup_noise_manager()
+	if _noise_manager == null or not _noise_manager.has_method("get_recent_noise"):
 		return
-	var noises: Array = _noise_manager.get_recent_noise(global_position, max(vision_range * 2.0, 24.0), 5000)
+	var noises: Array = _noise_manager.get_recent_noise(global_position, hearing_range, 5000)
 	if noises.is_empty():
 		return
 	var loudest: Dictionary = {}
@@ -674,16 +690,19 @@ func _handle_noise_reactions() -> void:
 	for noise in noises:
 		if typeof(noise) != TYPE_DICTIONARY:
 			continue
-		if float(noise["loudness"]) > best_loudness:
-			best_loudness = float(noise["loudness"])
+		var perceived_loudness := float(noise.get("perceived_loudness", noise["loudness"]))
+		if perceived_loudness > best_loudness:
+			best_loudness = perceived_loudness
 			loudest = noise
 	if loudest.is_empty():
 		return
-	if best_loudness < 0.5 and current_state in [State.IDLE, State.PATROL]:
+	if best_loudness < minimum_heard_loudness:
 		return
 	_noise_position = Vector3(loudest["position"])
+	if StringName(loudest.get("source", &"")) == &"player_movement":
+		last_known_player_position = _noise_position
 	if current_state in [State.IDLE, State.PATROL, State.SEARCH]:
-		_set_state(State.INVESTIGATE)
+		_set_state(State.STALK if best_loudness >= stalk_loudness else State.INVESTIGATE)
 		investigate_timer = investigate_timeout
 		_target_position = _noise_position
 

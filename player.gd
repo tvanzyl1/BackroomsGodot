@@ -26,6 +26,7 @@ var rng := RandomNumberGenerator.new()
 var pitch: float = 0.0
 var input_enabled: bool = true
 var current_health: float
+var noise_timer: float = 0.0
 
 func setup() -> void:
 	add_to_group("player")
@@ -121,3 +122,10 @@ func _physics_process(delta: float) -> void:
 	velocity.z = move_toward(velocity.z, wish.z * move_speed, acceleration * delta)
 	velocity.y = 0.0
 	move_and_slide()
+	noise_timer -= delta
+	if noise_timer <= 0.0 and wish.length_squared() > 0.01:
+		var noise_manager := get_tree().get_first_node_in_group("noise_manager")
+		if noise_manager and noise_manager.has_method("emit_noise"):
+			var movement_loudness := clampf(velocity.length() / move_speed, 0.0, 1.0) * 0.8
+			noise_manager.emit_noise(global_position, movement_loudness, &"player_movement")
+		noise_timer = 0.45

@@ -17,5 +17,8 @@ To-do list:
 2. [x] On collision with the howler the player should lose 10% health.
 3. [x] Some rare health orbs to be picked up by the player
 4. [x] On collision with howler and on pickup of the health there should be visual indicators. ie. red slash on attack or healing particles on pickup.
-5. The Howler should have better noise detection to follow/stalk the player better.
+5. [x] The Howler should have better noise detection to follow/stalk the player better.
+5.1 [x] Something like following noise when hearing it for a certain radius
+5.2 [x] follow player's last detected position, to make sure he doesn't just lose the player around a corner.
+5.3 [x] Wider view detection.
 6. A win state; when getting to the ending a message showing that you've exited the backrooms.

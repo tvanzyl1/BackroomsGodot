@@ -3,7 +3,6 @@ extends Node3D
 const PLAYER_SCRIPT: Script = preload("res://player.gd")
 const HEALTH_ORB_SCRIPT: Script = preload("res://HealthOrb.gd")
 const FEEDBACK_OVERLAY_SCRIPT: Script = preload("res://FeedbackOverlay.gd")
-
 const MAZE_SIZE: int = 17
 const CELL_SIZE: float = 3.2
 const WALL_HEIGHT: float = 3.0
@@ -24,6 +23,7 @@ var health_bar: ProgressBar
 var feedback_overlay: Control
 var quit_dialog: ConfirmationDialog
 var roof_lights: Array[Dictionary] = []
+var noise_manager: Node
 
 var wall_material: StandardMaterial3D
 var floor_material: StandardMaterial3D
@@ -34,6 +34,10 @@ func _ready() -> void:
 	rng.randomize()
 	_create_materials()
 	_create_hud()
+	noise_manager = NoiseManager.new()
+	noise_manager.name = "NoiseManager"
+	noise_manager.add_to_group("noise_manager")
+	add_child(noise_manager)
 	new_game()
 
 func _unhandled_input(event: InputEvent) -> void:
