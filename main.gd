@@ -15,6 +15,7 @@ var generation: int = 0
 var status_label: Label
 var seed_label: Label
 var quit_dialog: ConfirmationDialog
+var roof_lights: Array[Dictionary] = []
 
 var wall_material: StandardMaterial3D
 var floor_material: StandardMaterial3D
@@ -48,6 +49,24 @@ func new_game() -> void:
 	_spawn_player()
 	seed_label.text = "SECTOR %02d  //  SEED %08d" % [generation, rng.seed]
 	status_label.text = "Find the way out"
+
+func _process(delta: float) -> void:
+	for state in roof_lights:
+		if state.broken:
+			continue
+		state.next_flicker -= delta
+		if state.flicker_left > 0.0:
+			state.flicker_left -= delta
+			state.pulse_timer -= delta
+			if state.pulse_timer <= 0.0:
+				state.light.light_energy = state.base_energy * rng.randf_range(0.12, 0.9)
+				state.pulse_timer = rng.randf_range(0.035, 0.11)
+			if state.flicker_left <= 0.0:
+				state.light.light_energy = state.base_energy
+				state.next_flicker = rng.randf_range(3.0, 10.0)
+		elif state.next_flicker <= 0.0:
+			state.flicker_left = rng.randf_range(0.16, 0.7)
+			state.pulse_timer = 0.0
 
 func _generate_maze() -> void:
 	maze.clear()
@@ -115,21 +134,31 @@ func _build_maze() -> void:
 	_add_lights()
 
 func _add_lights() -> void:
+	roof_lights.clear()
 	for z in range(1, MAZE_SIZE, 4):
 		for x in range(1, MAZE_SIZE, 4):
 			if not maze[z][x]:
 				var light := OmniLight3D.new()
 				light.light_color = Color(1.0, 0.78, 0.48)
-				light.light_energy = 1.15
+				var broken := rng.randf() < 0.02
+				light.light_energy = 0.0 if broken else 1.15
 				light.omni_range = 5.2
 				light.position = _cell_position(x, z) + Vector3(0.0, 2.55, 0.0)
 				maze_root.add_child(light)
+				roof_lights.append({
+					"light": light,
+					"base_energy": 1.15,
+					"next_flicker": rng.randf_range(3.0, 10.0),
+					"flicker_left": 0.0,
+					"pulse_timer": 0.0,
+					"broken": broken
+				})
 				var fixture := MeshInstance3D.new()
 				var mesh := BoxMesh.new()
 				mesh.size = Vector3(0.55, 0.04, 0.55)
 				fixture.mesh = mesh
 				fixture.position = light.position
-				fixture.material_override = exit_material
+				fixture.material_override = ceiling_material if broken else exit_material
 				maze_root.add_child(fixture)
 
 func _spawn_player() -> void:
