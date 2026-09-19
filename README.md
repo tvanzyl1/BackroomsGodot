@@ -27,4 +27,4 @@ To-do list:
 9. [x] Howler should take 40% of player health on collision. 
 10. [x] Health orbs should only be picked up if the player health is less than 100. 
 11. [x] Start state with a message "You've landed in a strange backrooms, press any key to start".
-12. Add some "oversized" rooms so the maze is not just coridors.
+12. [x] Add some "oversized" rooms so the maze is not just coridors.

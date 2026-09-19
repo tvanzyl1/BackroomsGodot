@@ -149,6 +149,32 @@ func _generate_maze() -> void:
 		var z := rng.randi_range(1, MAZE_SIZE - 2)
 		if (x + z) % 2 == 1:
 			maze[z][x] = false
+	_add_oversized_rooms()
+
+func _add_oversized_rooms() -> void:
+	var room_candidates: Array[Vector2i] = []
+	for z in range(1, MAZE_SIZE - 1):
+		for x in range(1, MAZE_SIZE - 1):
+			if not maze[z][x]:
+				room_candidates.append(Vector2i(x, z))
+	room_candidates.shuffle()
+	var room_count := rng.randi_range(2, 5)
+	for room_index in range(room_count):
+		if room_candidates.is_empty():
+			break
+		var center: Vector2i = room_candidates.pop_back()
+		if center == Vector2i(1, 1) or center == EXIT_CELL:
+			continue
+		var half_width := rng.randi_range(1, 3)
+		var half_height := rng.randi_range(1, 3)
+		var min_x := maxi(1, center.x - half_width)
+		var max_x := mini(MAZE_SIZE - 2, center.x + half_width)
+		var min_z := maxi(1, center.y - half_height)
+		var max_z := mini(MAZE_SIZE - 2, center.y + half_height)
+		for z in range(min_z, max_z + 1):
+			for x in range(min_x, max_x + 1):
+				if Vector2i(x, z) != Vector2i(1, 1) and Vector2i(x, z) != EXIT_CELL:
+					maze[z][x] = false
 
 func _build_maze() -> void:
 	var floor_body := StaticBody3D.new()
