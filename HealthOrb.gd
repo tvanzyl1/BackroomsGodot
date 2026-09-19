@@ -19,6 +19,8 @@ func _process(delta: float) -> void:
 func _on_body_entered(body: Node3D) -> void:
 	if collected or not body.is_in_group("player") or not body.has_method("restore_health"):
 		return
+	if float(body.get("current_health")) >= float(body.get("maximum_health")):
+		return
 	collected = true
 	body.restore_health(heal_amount)
 	queue_free()

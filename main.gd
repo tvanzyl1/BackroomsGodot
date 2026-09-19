@@ -27,11 +27,14 @@ var death_message: Label
 var end_overlay: ColorRect
 var end_message: Label
 var new_game_button: Button
+var start_overlay: ColorRect
+var start_message: Label
 var quit_dialog: ConfirmationDialog
 var roof_lights: Array[Dictionary] = []
 var noise_manager: Node
 var game_finished: bool = false
 var game_over: bool = false
+var game_started: bool = false
 var death_time: float = 0.0
 var exit_position: Vector3 = Vector3.ZERO
 
@@ -51,6 +54,9 @@ func _ready() -> void:
 	new_game()
 
 func _unhandled_input(event: InputEvent) -> void:
+	if not game_started and event is InputEventKey and event.pressed:
+		_start_game()
+		return
 	if event.is_action_pressed("new_game"):
 		new_game()
 	if event.is_action_pressed("quit_game") and not quit_dialog.visible:
@@ -63,6 +69,7 @@ func new_game() -> void:
 	generation += 1
 	game_finished = false
 	game_over = false
+	game_started = false
 	death_time = 0.0
 	if is_instance_valid(howler):
 		howler.free()
@@ -78,9 +85,14 @@ func new_game() -> void:
 	_generate_maze()
 	_build_maze()
 	_spawn_player()
+	player.input_enabled = false
+	howler.set_process(false)
+	howler.set_physics_process(false)
 	death_overlay.visible = false
 	death_message.visible = false
 	end_overlay.visible = false
+	start_overlay.visible = true
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	seed_label.text = "SECTOR %02d  //  SEED %08d" % [generation, rng.seed]
 	status_label.text = "Find the way out"
 
@@ -334,6 +346,14 @@ func _show_end_state(title: String, subtitle: String) -> void:
 	end_message.text = "%s\n\n%s" % [title, subtitle]
 	end_overlay.visible = true
 
+func _start_game() -> void:
+	game_started = true
+	player.input_enabled = true
+	howler.set_process(true)
+	howler.set_physics_process(true)
+	start_overlay.visible = false
+	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+
 func _spawn_howler() -> void:
 	var howler_scene: PackedScene = preload("res://Howler.tscn")
 	howler = howler_scene.instantiate()
@@ -499,6 +519,25 @@ func _create_hud() -> void:
 	new_game_button.add_theme_font_size_override("font_size", 18)
 	new_game_button.pressed.connect(new_game)
 	end_overlay.add_child(new_game_button)
+	start_overlay = ColorRect.new()
+	start_overlay.name = "StartOverlay"
+	start_overlay.color = Color(0.015, 0.01, 0.008, 0.86)
+	start_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	start_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	start_overlay.visible = false
+	layer.add_child(start_overlay)
+	start_message = Label.new()
+	start_message.name = "StartMessage"
+	start_message.text = "YOU'VE LANDED IN A STRANGE BACKROOMS\n\nPRESS ANY KEY TO START"
+	start_message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	start_message.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	start_message.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	start_message.position = Vector2(-380.0, -120.0)
+	start_message.size = Vector2(760.0, 240.0)
+	start_message.add_theme_color_override("font_color", Color(1.0, 0.9, 0.7))
+	start_message.add_theme_font_size_override("font_size", 28)
+	start_message.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	start_overlay.add_child(start_message)
 	quit_dialog = ConfirmationDialog.new()
 	quit_dialog.title = "Leave the Maze?"
 	quit_dialog.dialog_text = "Are you sure you want to quit?"

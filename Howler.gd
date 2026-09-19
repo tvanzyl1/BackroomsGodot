@@ -21,7 +21,7 @@ enum State {
 @export var acceleration: float = 7.0
 @export var turn_speed: float = 4.5
 @export var attack_range: float = 1.8
-@export var attack_damage: float = 10.0
+@export_range(0.0, 1.0, 0.05) var attack_health_fraction: float = 0.4
 @export var attack_cooldown: float = 1.5
 @export var chase_cooldown: float = 4.0
 
@@ -536,7 +536,8 @@ func _handle_attack(delta: float) -> void:
 		_attack_window_open = true
 		_last_attack_time = Time.get_ticks_msec()
 		if is_instance_valid(player) and player.has_method("take_damage"):
-			player.take_damage(attack_damage)
+			var maximum_health := float(player.get("maximum_health"))
+			player.take_damage(maximum_health * attack_health_fraction)
 		_set_state(State.CHASE)
 		_attack_window_open = false
 
