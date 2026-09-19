@@ -264,7 +264,7 @@ func _spawn_health_orbs() -> void:
 		var orb := Area3D.new()
 		orb.name = "HealthOrb_%d" % index
 		orb.set_script(HEALTH_ORB_SCRIPT)
-		orb.heal_amount = HEALTH_ORB_AMOUNT
+		orb.set("heal_amount", HEALTH_ORB_AMOUNT)
 		orb.position = _cell_position(available_cells[index].x, available_cells[index].y) + Vector3(0.0, 0.65, 0.0)
 		orb.collision_layer = 0
 		orb.collision_mask = 1
@@ -327,6 +327,7 @@ func _spawn_player() -> void:
 	player.name = "Player"
 	add_child(player)
 	player.position = _cell_position(1, 1) + Vector3(0.0, 0.03, 0.0)
+	player.current_health = player.maximum_health
 	player.set_battery_mode(selected_battery_mode)
 	player.flashlight_enabled = false
 	player._update_flashlight_visibility()
@@ -335,6 +336,7 @@ func _spawn_player() -> void:
 	player.damage_taken.connect(_show_damage_feedback)
 	player.health_restored.connect(_show_heal_feedback)
 	player.died.connect(_on_player_died)
+	player.health_changed.emit(player.current_health, player.maximum_health)
 	_spawn_howler()
 
 func _show_damage_feedback() -> void:
