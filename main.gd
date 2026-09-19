@@ -111,6 +111,10 @@ func _process(delta: float) -> void:
 		_complete_maze()
 	if is_instance_valid(howler):
 		if howler.get("is_dead") == true:
+			if is_instance_valid(howler_health_bar):
+				howler_health_bar.visible = false
+			if is_instance_valid(howler_health_label):
+				howler_health_label.text = ""
 			var elapsed := float(howler.get("respawn_timer")) + delta
 			howler.set("respawn_timer", elapsed)
 			if elapsed >= float(howler.get("respawn_delay")):

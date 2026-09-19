@@ -38,5 +38,6 @@ To-do list:
 14.2. [x] The Howler should start wiht 100 health on game starts
 14.3. [x] The player attack should do 10 damage to the Howler.
 14.4. [x] The Howler should die on 0 health.
-14.5. [x] after 60 seconds of Howler death a new instance should be spawned in the maze.
+14.5. [x] After 10 seconds of Howler death a new instance should be spawned in the maze.
 14.6. [x] When the player can see the Howler then the Howler's health bar should be visible. And purple. 
+15. [x] When the Howler dies, it should disappear instantly and respawn 10 seconds later.

@@ -19,7 +19,7 @@ enum State {
 
 @export_group("Health")
 @export var max_health: float = 100.0
-@export var respawn_delay: float = 60.0
+@export var respawn_delay: float = 10.0
 
 @export_group("Movement")
 @export var patrol_speed: float = 2.0
@@ -787,10 +787,17 @@ func _set_state(new_state: State) -> void:
 		State.ATTACK:
 			_attack_window_open = false
 		State.STUNNED:
-			stun_timer = 0.8
+			stun_timer = 0.1
 		State.DEAD:
 			is_dead = true
 			velocity = Vector3.ZERO
+			model_root.visible = false
+			collision_shape.set_deferred("disabled", true)
+			set_collision_layer(0)
+			set_collision_mask(0)
+			for child in audio_node.get_children():
+				if child is AudioStreamPlayer3D:
+					child.stop()
 			if is_instance_valid(animation_player):
 				animation_player.stop()
 
