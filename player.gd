@@ -3,6 +3,8 @@ extends CharacterBody3D
 
 signal health_changed(current_health: float, maximum_health: float)
 signal died
+signal damage_taken
+signal health_restored
 
 @export var move_speed: float = 4.5
 @export var mouse_sensitivity: float = 0.0025
@@ -68,6 +70,7 @@ func take_damage(amount: float) -> void:
 		return
 	current_health = maxf(current_health - amount, 0.0)
 	health_changed.emit(current_health, maximum_health)
+	damage_taken.emit()
 	if current_health <= 0.0:
 		input_enabled = false
 		velocity = Vector3.ZERO
@@ -78,6 +81,7 @@ func restore_health(amount: float) -> void:
 		return
 	current_health = minf(current_health + amount, maximum_health)
 	health_changed.emit(current_health, maximum_health)
+	health_restored.emit()
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion and input_enabled:

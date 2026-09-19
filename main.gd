@@ -2,6 +2,7 @@ extends Node3D
 
 const PLAYER_SCRIPT: Script = preload("res://player.gd")
 const HEALTH_ORB_SCRIPT: Script = preload("res://HealthOrb.gd")
+const FEEDBACK_OVERLAY_SCRIPT: Script = preload("res://FeedbackOverlay.gd")
 
 const MAZE_SIZE: int = 17
 const CELL_SIZE: float = 3.2
@@ -20,6 +21,7 @@ var status_label: Label
 var seed_label: Label
 var health_label: Label
 var health_bar: ProgressBar
+var feedback_overlay: Control
 var quit_dialog: ConfirmationDialog
 var roof_lights: Array[Dictionary] = []
 
@@ -223,8 +225,18 @@ func _spawn_player() -> void:
 	add_child(player)
 	player.position = _cell_position(1, 1) + Vector3(0.0, 0.03, 0.0)
 	player.health_changed.connect(_update_health_bar)
+	player.damage_taken.connect(_show_damage_feedback)
+	player.health_restored.connect(_show_heal_feedback)
 	player.died.connect(_on_player_died)
 	_spawn_howler()
+
+func _show_damage_feedback() -> void:
+	if is_instance_valid(feedback_overlay):
+		feedback_overlay.show_damage()
+
+func _show_heal_feedback() -> void:
+	if is_instance_valid(feedback_overlay):
+		feedback_overlay.show_heal()
 
 func _update_health_bar(current_health: float, maximum_health: float) -> void:
 	if health_bar == null:
@@ -338,6 +350,9 @@ func _create_hud() -> void:
 	crosshair.add_theme_color_override("font_color", Color(1.0, 0.92, 0.7, 0.75))
 	crosshair.add_theme_font_size_override("font_size", 18)
 	layer.add_child(crosshair)
+	feedback_overlay = FEEDBACK_OVERLAY_SCRIPT.new()
+	feedback_overlay.name = "FeedbackOverlay"
+	layer.add_child(feedback_overlay)
 	quit_dialog = ConfirmationDialog.new()
 	quit_dialog.title = "Leave the Maze?"
 	quit_dialog.dialog_text = "Are you sure you want to quit?"
