@@ -1,10 +1,50 @@
 78098b89c88a74ebe8c20117b8754620
-::res://::1789793245
-Howler.gd::GDScript::8495347153886575429::1789729377::0::1::::Howler<>CharacterBody3D<><>0<>0<><>::
+::res://::1789795433
+Howler.gd::GDScript::8495347153886575429::1789795433::0::1::::Howler<>CharacterBody3D<><>0<>0<><>::
 Howler.md::TextFile::-1::1789724860::0::1::::<><><>0<>0<><>::
-Howler.tscn::PackedScene::-1::1789725173::0::1::::<><><>0<>0<><>::res://Howler.gd
-main.gd::GDScript::9147705478302887444::1789729687::0::1::::<>Node3D<><>0<>0<><>::
+Howler.tscn::PackedScene::-1::1789795433::0::1::::<><><>0<>0<><>::res://Howler.gd<>res://stalker_lethal_ape.glb
+main.gd::GDScript::9147705478302887444::1789793772::0::1::::<>Node3D<><>0<>0<><>::
 main.tscn::PackedScene::-1::1789724041::0::1::::<><><>0<>0<><>::res://main.gd
 NoiseManager.gd::GDScript::4000871765872474931::1789725167::0::1::::<>Node<><>0<>0<><>::
 player.gd::GDScript::1905602559184076058::1789730307::0::1::::MazePlayer<>CharacterBody3D<><>0<>0<><>::
 README.md::TextFile::-1::1789724041::0::1::::<><><>0<>0<><>::
+stalker_lethal_ape.glb::PackedScene::1193479190385765234::1789795345::1789795408::1::::<><><>0<>0<>1b133aca22f9f2ccd3566d5ce87135b9<>res://.godot/imported/stalker_lethal_ape.glb-1ab1e9b80f820d01737c31dcf99f2a5e.scn::uid://bksuuge2ji8mv::::res://stalker_lethal_ape_0.png<>uid://02beby4dp3s1::::res://stalker_lethal_ape_2.png
+stalker_lethal_ape_0.png::CompressedTexture2D::3126718297938383073::1789795408::1789795408::1::::<><><>0<>0<>7901061b751f257f2d29ed57838e2291<>res://.godot/imported/stalker_lethal_ape_0.png-88a4eda16dabc55f3efaf7323d68b7fc.ctex::
+stalker_lethal_ape_1.png::CompressedTexture2D::5312181777204491726::1789795408::1789795408::1::::<><><>0<>0<>f734ade9abb1834e46b5ef702cd26f55<>res://.godot/imported/stalker_lethal_ape_1.png-104ef44a0d817661779252544ec19f7e.ctex::
+stalker_lethal_ape_2.png::CompressedTexture2D::1810527241399724598::1789795408::1789795408::1::::<><><>0<>0<>662ac8dfae9e2e50b10a675c9d32057e<>res://.godot/imported/stalker_lethal_ape_2.png-58945d6b0a044db51d89162ee1eee79c.ctex::
+::res://Bestiary - Dungeon Monsters Kit[Standard]/::1789794439
+Importing_Godot.png::CompressedTexture2D::7842578997919329197::1789794375::1789794439::1::::<><><>0<>0<>4b7db56558f70fc00d92a5ef1fa7f5eb<>res://.godot/imported/Importing_Godot.png-f39a0f747f6cb7c52530da3ef634c5d1.ctex::
+Importing_UnrealUnity.png::CompressedTexture2D::2942196463268913422::1789794375::1789794438::1::::<><><>0<>0<>216dedc015a6a77bfed26354140f422b<>res://.godot/imported/Importing_UnrealUnity.png-e76bbdd3351ae473783bc1119ae1328b.ctex::
+License_Standard.txt::TextFile::-1::1789794375::0::1::::<><><>0<>0<><>::
+Preview.jpg::CompressedTexture2D::3696547071530272662::1789794375::1789794439::1::::<><><>0<>0<>503f22d582cc0709335920c57051ce6b<>res://.godot/imported/Preview.jpg-6130f71d0fccae2b71f603e21fab2822.ctex::
+::res://Bestiary - Dungeon Monsters Kit[Standard]/Exports/::1789794375
+::res://Bestiary - Dungeon Monsters Kit[Standard]/Exports/FBX (Unity)/::1789794451
+Imp.fbx::PackedScene::8074794598875173196::1789794375::1789794451::1::::<><><>0<>0<>81fadd8c7fd997706d369ad993d40c89<>res://.godot/imported/Imp.fbx-0c4c3128993356a43ce891209e99d902.scn::uid://upmujowxo144::::res://Bestiary - Dungeon Monsters Kit[Standard]/textures/T_Imp_BaseColor_1.png<>uid://1ee40m1rgfpo::::res://Bestiary - Dungeon Monsters Kit[Standard]/textures/T_Imp_Emissive.png<>uid://b3k16maxpyqxl::::res://Bestiary - Dungeon Monsters Kit[Standard]/textures/T_Imp_Normal.png
+Puglin.fbx::PackedScene::2859736692013212143::1789794375::1789794450::1::::<><><>0<>0<>c8505ebc796241a42e100ba590e1b4a5<>res://.godot/imported/Puglin.fbx-4a54f5f96465e8f93c1f8a1b8753ebe8.scn::uid://dajhr7i0pdi7b::::res://Bestiary - Dungeon Monsters Kit[Standard]/textures/T_Puglin_BaseColor_1.png<>uid://cwwpy24aw7b3f::::res://Bestiary - Dungeon Monsters Kit[Standard]/textures/T_Puglin_Emissive.png<>uid://gq75ctduv6ra::::res://Bestiary - Dungeon Monsters Kit[Standard]/textures/T_Puglin_Normal.png
+::res://Bestiary - Dungeon Monsters Kit[Standard]/Exports/GLB (Godot-Unreal)/::1789794450
+Imp.glb::PackedScene::5909593614328223367::1789794376::1789794450::1::::<><><>0<>0<>304dabf450ff6cf1001e496403da22ff<>res://.godot/imported/Imp.glb-83feaf6eb83dcd1f727e328c86bf94b6.scn::uid://d1rcwch63yxsq::::res://Bestiary - Dungeon Monsters Kit[Standard]/Exports/GLB (Godot-Unreal)/Imp_T_Imp_BaseColor_1.png<>uid://cv8dmbj5jl8v0::::res://Bestiary - Dungeon Monsters Kit[Standard]/Exports/GLB (Godot-Unreal)/Imp_T_Imp_ORM.png<>uid://dom7uv1r0og7n::::res://Bestiary - Dungeon Monsters Kit[Standard]/Exports/GLB (Godot-Unreal)/Imp_T_Imp_Emissive.png<>uid://d35fbvboxq38x::::res://Bestiary - Dungeon Monsters Kit[Standard]/Exports/GLB (Godot-Unreal)/Imp_T_Imp_Normal.png
+Imp_T_Imp_BaseColor_1.png::CompressedTexture2D::9019427246245819248::1789794447::1789794448::1::::<><><>0<>0<>1de32eb0426445f9ed57e321998ffd85<>res://.godot/imported/Imp_T_Imp_BaseColor_1.png-8e2f46a572ea7f4318d6096d2d2fc25e.ctex::
+Imp_T_Imp_Emissive.png::CompressedTexture2D::8168658198668735365::1789794445::1789794445::1::::<><><>0<>0<>050f452225a7867693232e593e294599<>res://.godot/imported/Imp_T_Imp_Emissive.png-5fc254631d09ea2bd695798406f78c06.ctex::
+Imp_T_Imp_Normal.png::CompressedTexture2D::9186787481526391897::1789794445::1789794447::1::::<><><>0<>0<>d41aa03dee61cbdabdb982242f20e355<>res://.godot/imported/Imp_T_Imp_Normal.png-3ee8913350f5e972fb1be27e05326d24.ctex::
+Imp_T_Imp_ORM.png::CompressedTexture2D::6315135197976163791::1789794449::1789794450::1::::<><><>0<>0<>28f157681c6678339d0cccd4ff63569f<>res://.godot/imported/Imp_T_Imp_ORM.png-5a30b53b68b28883431d8d1ee9de4c38.ctex::
+Puglin.glb::PackedScene::2256575223707211189::1789794376::1789794445::1::::<><><>0<>0<>ab727ce309c099a3e40a125c915dee67<>res://.godot/imported/Puglin.glb-83c3e39aa6c2c41feebc7759358fe07b.scn::uid://viandro8wo3f::::res://Bestiary - Dungeon Monsters Kit[Standard]/Exports/GLB (Godot-Unreal)/Puglin_T_Puglin_BaseColor_1.png<>uid://ctw746vyvyhr::::res://Bestiary - Dungeon Monsters Kit[Standard]/Exports/GLB (Godot-Unreal)/Puglin_T_Puglin_ORM.png<>uid://c4rabavn5cutu::::res://Bestiary - Dungeon Monsters Kit[Standard]/Exports/GLB (Godot-Unreal)/Puglin_T_Puglin_Emissive.png<>uid://b4y26x6b1xhxa::::res://Bestiary - Dungeon Monsters Kit[Standard]/Exports/GLB (Godot-Unreal)/Puglin_T_Puglin_Normal.png
+Puglin_T_Puglin_BaseColor_1.png::CompressedTexture2D::1490504138264724277::1789794443::1789794444::1::::<><><>0<>0<>926c18cc1a0e389c16e2bf1678392f9c<>res://.godot/imported/Puglin_T_Puglin_BaseColor_1.png-831c4b5559665cb73f2a98c5afe818d1.ctex::
+Puglin_T_Puglin_Emissive.png::CompressedTexture2D::6843414073573808058::1789794441::1789794441::1::::<><><>0<>0<>ba748d92c05c37775c832772fb702134<>res://.godot/imported/Puglin_T_Puglin_Emissive.png-fb8e66aeeda6a69b4a486da2badaff2f.ctex::
+Puglin_T_Puglin_Normal.png::CompressedTexture2D::4473138189716304354::1789794441::1789794443::1::::<><><>0<>0<>23d237b2efe1d459a9578ef3cd4f619e<>res://.godot/imported/Puglin_T_Puglin_Normal.png-93561e905344dede060c4c7774288552.ctex::
+Puglin_T_Puglin_ORM.png::CompressedTexture2D::180995355902179815::1789794444::1789794445::1::::<><><>0<>0<>c0d940343c01cd25f782aaf0ddd470ca<>res://.godot/imported/Puglin_T_Puglin_ORM.png-99a6004574fd807bc59d4d2ed66e3171.ctex::
+::res://Bestiary - Dungeon Monsters Kit[Standard]/Textures/::1789794440
+T_Imp_BaseColor_1.png::CompressedTexture2D::1435507354231149311::1789794376::1789794440::1::::<><><>0<>0<>39b4eddf92bd37d2eb0c1895d01f94df<>res://.godot/imported/T_Imp_BaseColor_1.png-7829fcad0df42e35868333bc894ea35d.ctex::
+T_Imp_BaseColor_2.png::CompressedTexture2D::7771956597162998427::1789794376::1789794440::1::::<><><>0<>0<>d924aabcaf9b98c576082d1ff289a138<>res://.godot/imported/T_Imp_BaseColor_2.png-ca9edb90a426c4a2813669ac5dad9320.ctex::
+T_Imp_BaseColor_3.png::CompressedTexture2D::8098637591587338011::1789794377::1789794440::1::::<><><>0<>0<>186dd56fbd6b19087f179c01d7a2ae34<>res://.godot/imported/T_Imp_BaseColor_3.png-0d9a9eeeaccaba4a06dbe0e80089ecc1.ctex::
+T_Imp_Emissive.png::CompressedTexture2D::1833463434425076384::1789794377::1789794439::1::::<><><>0<>0<>f362953d958abcdabe3ceaba9f93bcfe<>res://.godot/imported/T_Imp_Emissive.png-929edfb36f6db4869fff0e7c23b2e58e.ctex::
+T_Imp_Normal.png::CompressedTexture2D::4373986715867809513::1789794377::1789794440::1::::<><><>0<>0<>11db49f6217da92203635972a4d0fd5d<>res://.godot/imported/T_Imp_Normal.png-feca944b624a3e7eea800126c39b85cd.ctex::
+T_Imp_ORM.png::CompressedTexture2D::9087468222980602631::1789794377::1789794440::1::::<><><>0<>0<>39b549dabb2a2b8efacd2c16c0db41fb<>res://.godot/imported/T_Imp_ORM.png-c681da5f39c6b0126443523164b62b68.ctex::
+T_Puglin_BaseColor_1.png::CompressedTexture2D::7178298522573288457::1789794378::1789794439::1::::<><><>0<>0<>ea1e9972df1cc8ed5cebbb736879c30a<>res://.godot/imported/T_Puglin_BaseColor_1.png-5801636df85a00e98d659e96b447586b.ctex::
+T_Puglin_BaseColor_2.png::CompressedTexture2D::7108953189611745059::1789794378::1789794439::1::::<><><>0<>0<>dfc1868936f06c3bc61e4c5ff32f38a3<>res://.godot/imported/T_Puglin_BaseColor_2.png-c09d83438ef891bf4e105a6b86722f0a.ctex::
+T_Puglin_BaseColor_3.png::CompressedTexture2D::7567687940412447083::1789794378::1789794439::1::::<><><>0<>0<>fa84f559366b1c5eee047bfcc643362f<>res://.godot/imported/T_Puglin_BaseColor_3.png-7214289b56fe330ecc97180c467ffd96.ctex::
+T_Puglin_Emissive.png::CompressedTexture2D::6363367314917885281::1789794378::1789794438::1::::<><><>0<>0<>2ee101a2b203123bb2351af2425228cd<>res://.godot/imported/T_Puglin_Emissive.png-6712c6ae09a8d0cc30c479e412ff5e1a.ctex::
+T_Puglin_Normal.png::CompressedTexture2D::456159758040703430::1789794378::1789794440::1::::<><><>0<>0<>fc0d764f950bc6b275402edff62d2853<>res://.godot/imported/T_Puglin_Normal.png-d6bbfa960868aee9d900662dad9233a0.ctex::
+T_Puglin_ORM.png::CompressedTexture2D::5182530007913152158::1789794379::1789794439::1::::<><><>0<>0<>ab6375a94244f85d53f571acf4a7a21a<>res://.godot/imported/T_Puglin_ORM.png-58a359e5eff4910931beaac0e3112803.ctex::
+::res://Bestiary - Dungeon Monsters Kit[Standard]/Textures/Unreal Normals/::1789794441
+T_Imp_Normal_Unreal.png::CompressedTexture2D::398846040372059587::1789794379::1789794441::1::::<><><>0<>0<>6a682d6abc387939be3d4bcca04d812c<>res://.godot/imported/T_Imp_Normal_Unreal.png-75183f60f5f1b783746579077ed42edd.ctex::
+T_Puglin_Normal_Unreal.png::CompressedTexture2D::1040984006080216199::1789794379::1789794440::1::::<><><>0<>0<>8a4786abab2a68c88b7c683559290e32<>res://.godot/imported/T_Puglin_Normal_Unreal.png-1b5eace44783bee8028ae1ee91713c63.ctex::

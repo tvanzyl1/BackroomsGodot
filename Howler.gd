@@ -77,6 +77,10 @@ var chase_audio: AudioStreamPlayer3D
 var attack_audio: AudioStreamPlayer3D
 var animation_player: AnimationPlayer
 var debug_visuals: Node3D
+var monster_skeleton: Skeleton3D
+var monster_bones: Dictionary = {}
+var monster_rest_rotations: Dictionary = {}
+var procedural_animation_time: float = 0.0
 
 var rng := RandomNumberGenerator.new()
 var last_vision_check: float = 0.0
@@ -135,6 +139,7 @@ func _physics_process(delta: float) -> void:
 	if current_state == State.DEAD:
 		return
 	_handle_movement(delta)
+	_update_model_animation()
 	_update_vision()
 	_handle_noise_reactions()
 
@@ -164,6 +169,7 @@ func _setup_children() -> void:
 		placeholder.mesh = body_mesh
 		placeholder.position.y = 1.0
 		model_root.add_child(placeholder)
+	_setup_procedural_animation()
 
 	navigation_agent = get_node_or_null("NavigationAgent3D")
 	if navigation_agent == null:
@@ -221,7 +227,7 @@ func _setup_children() -> void:
 		attack_audio.name = "AttackAudio"
 		audio_node.add_child(attack_audio)
 
-	animation_player = get_node_or_null("AnimationPlayer")
+	animation_player = model_root.find_child("AnimationPlayer", true, false) as AnimationPlayer
 	if animation_player == null:
 		animation_player = AnimationPlayer.new()
 		animation_player.name = "AnimationPlayer"
@@ -246,6 +252,42 @@ func _apply_default_model() -> void:
 	placeholder.mesh = body_mesh
 	placeholder.position.y = 1.0
 	model_root.add_child(placeholder)
+
+func _setup_procedural_animation() -> void:
+	monster_skeleton = model_root.find_child("Skeleton3D", true, false) as Skeleton3D
+	if monster_skeleton == null:
+		return
+	for bone_index in monster_skeleton.get_bone_count():
+		var bone_name := StringName(monster_skeleton.get_bone_name(bone_index))
+		monster_bones[bone_name] = bone_index
+		monster_rest_rotations[bone_name] = monster_skeleton.get_bone_rest(bone_index).basis.get_rotation_quaternion()
+
+func _update_procedural_animation(delta: float) -> void:
+	if monster_skeleton == null:
+		return
+	procedural_animation_time += delta
+	var movement_speed := Vector2(velocity.x, velocity.z).length()
+	var walking := movement_speed > 0.1
+	var cycle_speed := 4.0 + movement_speed * 0.8
+	var cycle := procedural_animation_time * cycle_speed
+	var swing := sin(cycle) if walking else sin(procedural_animation_time * 1.5) * 0.12
+	var leg_swing := swing * 0.55 if walking else swing * 0.25
+	_set_bone_rotation(&"upperarm_l", Vector3.FORWARD, 1.15 + swing * 0.15)
+	_set_bone_rotation(&"upperarm_r", Vector3.FORWARD, -1.15 - swing * 0.15)
+	_set_bone_rotation(&"lowerarm_l", Vector3.FORWARD, -0.25)
+	_set_bone_rotation(&"lowerarm_r", Vector3.FORWARD, 0.25)
+	_set_bone_rotation(&"thigh_l", Vector3.RIGHT, leg_swing)
+	_set_bone_rotation(&"thigh_r", Vector3.RIGHT, -leg_swing)
+	_set_bone_rotation(&"calf_l", Vector3.RIGHT, max(0.0, -leg_swing) * 0.7)
+	_set_bone_rotation(&"calf_r", Vector3.RIGHT, max(0.0, leg_swing) * 0.7)
+	_set_bone_rotation(&"spine_02", Vector3.RIGHT, sin(procedural_animation_time * 1.5) * 0.04)
+
+func _set_bone_rotation(bone_name: StringName, axis: Vector3, angle: float) -> void:
+	if not monster_bones.has(bone_name):
+		return
+	var bone_index: int = monster_bones[bone_name]
+	var rest_rotation: Quaternion = monster_rest_rotations[bone_name]
+	monster_skeleton.set_bone_pose_rotation(bone_index, rest_rotation * Quaternion(axis, angle))
 
 func _setup_noise_manager() -> void:
 	var existing := get_tree().get_first_node_in_group("noise_manager")
@@ -635,6 +677,16 @@ func _update_debug_visuals() -> void:
 	ring.material_override = StandardMaterial3D.new()
 	ring.material_override.albedo_color = Color(1.0, 0.0, 0.0)
 	debug_visuals.add_child(ring)
+
+func _update_model_animation() -> void:
+	if animation_player == null or not animation_player.has_animation("Walk"):
+		return
+	var is_moving := Vector2(velocity.x, velocity.z).length() > 0.1
+	if is_moving:
+		if animation_player.current_animation != "Walk":
+			animation_player.play("Walk")
+	elif animation_player.current_animation == "Walk":
+		animation_player.stop()
 
 func _set_state(new_state: State) -> void:
 	if current_state == new_state:

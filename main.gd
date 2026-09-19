@@ -9,6 +9,7 @@ const WALL_THICKNESS: float = 0.18
 
 var maze: Array[Array] = []
 var maze_root: Node3D
+var howler: Node3D
 var player: MazePlayer
 var rng := RandomNumberGenerator.new()
 var generation: int = 0
@@ -39,6 +40,12 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func new_game() -> void:
 	generation += 1
+	if is_instance_valid(howler):
+		howler.free()
+	howler = null
+	if is_instance_valid(player):
+		player.free()
+	player = null
 	if maze_root:
 		maze_root.queue_free()
 	maze_root = Node3D.new()
@@ -172,7 +179,7 @@ func _spawn_player() -> void:
 
 func _spawn_howler() -> void:
 	var howler_scene: PackedScene = preload("res://Howler.tscn")
-	var howler: Node3D = howler_scene.instantiate()
+	howler = howler_scene.instantiate()
 	howler.name = "Howler"
 	add_child(howler)
 	var spawn_offset := Vector3(0.0, 0.05, -1.4)

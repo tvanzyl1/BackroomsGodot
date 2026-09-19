@@ -1,10 +1,9 @@
 [gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://Howler.gd" id="1_howler"]
+[ext_resource type="PackedScene" path="res://stalker_lethal_ape.glb" id="2_ape"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
-
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_1"]
 
 [node name="Howler" type="CharacterBody3D"]
 script = ExtResource("1_howler")
@@ -15,9 +14,10 @@ position = Vector3(0, 0.9, 0)
 
 [node name="ModelRoot" type="Node3D" parent="."]
 
-[node name="Body" type="MeshInstance3D" parent="ModelRoot"]
-mesh = SubResource("CapsuleMesh_1")
+[node name="StalkerApe" parent="ModelRoot" instance=ExtResource("2_ape")]
+scale = Vector3(1.2, 1.2, 1.2)
 position = Vector3(0, 1, 0)
+rotation = Vector3(0, 3.141593, 0)
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
 radius = 0.55
@@ -40,7 +40,5 @@ position = Vector3(0, 1.2, 0.8)
 [node name="ChaseAudio" type="AudioStreamPlayer3D" parent="Audio"]
 
 [node name="AttackAudio" type="AudioStreamPlayer3D" parent="Audio"]
-
-[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
 
 [node name="DebugVisuals" type="Node3D" parent="."]
