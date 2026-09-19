@@ -121,6 +121,7 @@ func _build_maze() -> void:
 	floor_body.name = "Floor"
 	maze_root.add_child(floor_body)
 	_add_box(floor_body, Vector3(MAZE_SIZE * CELL_SIZE, 0.0, MAZE_SIZE * CELL_SIZE), Vector3(0.0, -0.12, 0.0), floor_material)
+	_add_navigation_region()
 	var ceiling_body := StaticBody3D.new()
 	ceiling_body.name = "Ceiling"
 	maze_root.add_child(ceiling_body)
@@ -151,6 +152,39 @@ func _build_maze() -> void:
 	maze_root.add_child(exit_light)
 	_spawn_health_orbs()
 	_add_lights()
+
+func _add_navigation_region() -> void:
+	var navigation_region := NavigationRegion3D.new()
+	navigation_region.name = "MazeNavigation"
+	var navigation_mesh := NavigationMesh.new()
+	var vertices := PackedVector3Array()
+	var vertex_indices: Dictionary = {}
+	var polygons: Array[PackedInt32Array] = []
+	var half_cell := CELL_SIZE * 0.5
+	for z in range(MAZE_SIZE):
+		for x in range(MAZE_SIZE):
+			if maze[z][x]:
+				continue
+			var center := _cell_position(x, z) + Vector3(0.0, 0.02, 0.0)
+			var cell_corners: Array[Vector2i] = [
+				Vector2i(x, z),
+				Vector2i(x, z + 1),
+				Vector2i(x + 1, z + 1),
+				Vector2i(x + 1, z),
+			]
+			var polygon := PackedInt32Array()
+			for corner in cell_corners:
+				if not vertex_indices.has(corner):
+					var corner_position := _cell_position(corner.x, corner.y)
+					vertex_indices[corner] = vertices.size()
+					vertices.append(corner_position + Vector3(-half_cell, 0.02, -half_cell))
+				polygon.append(vertex_indices[corner])
+			polygons.append(polygon)
+	navigation_mesh.vertices = vertices
+	for polygon in polygons:
+		navigation_mesh.add_polygon(polygon)
+	navigation_region.navigation_mesh = navigation_mesh
+	maze_root.add_child(navigation_region)
 
 func _spawn_health_orbs() -> void:
 	var available_cells: Array[Vector2i] = []

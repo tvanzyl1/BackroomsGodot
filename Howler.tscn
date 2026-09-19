@@ -8,6 +8,8 @@
 [ext_resource type="AudioStream" path="res://Audio/AttackAudio.mp3" id="6_attack"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
+radius = 0.38
+height = 1.8
 
 [node name="Howler" type="CharacterBody3D"]
 script = ExtResource("1_howler")
@@ -19,12 +21,12 @@ position = Vector3(0, 0.9, 0)
 [node name="ModelRoot" type="Node3D" parent="."]
 
 [node name="StalkerApe" parent="ModelRoot" instance=ExtResource("2_ape")]
-scale = Vector3(1.2, 1.2, 1.2)
+scale = Vector3(1.1, 1.1, 1.1)
 position = Vector3(0, 1, 0)
 rotation = Vector3(0, 3.141593, 0)
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
-radius = 0.55
+radius = 0.42
 neighbor_distance = 10.0
 path_desired_distance = 1.0
 target_desired_distance = 1.2

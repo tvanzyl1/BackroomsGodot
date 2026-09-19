@@ -112,6 +112,7 @@ var _target_position: Vector3 = Vector3.ZERO
 var has_valid_patrol_target: bool = false
 var has_player_target: bool = false
 var current_target: Vector3 = Vector3.ZERO
+var navigation_goal: Vector3 = Vector3.ZERO
 
 var _noise_manager: Node
 var _attack_window_open: bool = false
@@ -194,7 +195,7 @@ func _setup_children() -> void:
 		collision_shape.name = "CollisionShape3D"
 		add_child(collision_shape)
 	var capsule := CapsuleShape3D.new()
-	capsule.radius = 0.5
+	capsule.radius = 0.38
 	capsule.height = 1.8
 	collision_shape.shape = capsule
 	collision_shape.position.y = 0.9
@@ -220,12 +221,12 @@ func _setup_children() -> void:
 		navigation_agent = NavigationAgent3D.new()
 		navigation_agent.name = "NavigationAgent3D"
 		add_child(navigation_agent)
-	navigation_agent.radius = 0.55
+	navigation_agent.radius = 0.42
 	navigation_agent.neighbor_distance = 10.0
 	navigation_agent.time_horizon = 5.0
 	navigation_agent.max_speed = chase_speed
-	navigation_agent.path_desired_distance = 1.0
-	navigation_agent.target_desired_distance = 1.2
+	navigation_agent.path_desired_distance = 0.35
+	navigation_agent.target_desired_distance = 0.7
 
 	vision_origin = get_node_or_null("VisionOrigin")
 	if vision_origin == null:
@@ -548,11 +549,7 @@ func _update_navigation(delta: float) -> void:
 	if navigation_agent == null:
 		return
 	if current_state in [State.CHASE, State.PATROL, State.INVESTIGATE, State.SEARCH, State.STALK]:
-		if Time.get_ticks_msec() - last_path_update > 250:
-			last_path_update = Time.get_ticks_msec()
-			if current_target != Vector3.ZERO:
-				navigation_agent.target_position = current_target
-		if navigation_agent.target_position.distance_to(global_position) > 0.1:
+		if navigation_goal != Vector3.ZERO and navigation_goal.distance_to(global_position) > 0.1:
 			var next_point := navigation_agent.get_next_path_position()
 			if next_point != Vector3.ZERO:
 				current_target = next_point
@@ -572,6 +569,9 @@ func _handle_movement(delta: float) -> void:
 func _move_toward_position(goal: Vector3, speed: float, delta: float, is_chase: bool = false) -> void:
 	if goal == Vector3.ZERO:
 		return
+	navigation_goal = goal
+	if navigation_agent:
+		navigation_agent.target_position = goal
 	var direction := goal - global_position
 	direction.y = 0.0
 	var distance := direction.length()
