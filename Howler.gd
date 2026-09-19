@@ -61,6 +61,9 @@ enum State {
 @export var debug_enabled: bool = true
 @export var show_state_name: bool = false
 
+@export_group("LimboAI")
+@export var use_limbo_ai: bool = true
+
 var current_state: State = State.IDLE
 var state_name: String = "IDLE"
 
@@ -110,12 +113,14 @@ var _last_attack_time: float = -999.0
 var _noise_position: Vector3 = Vector3.ZERO
 var _can_howl: bool = true
 var _search_turn_dir: float = 1.0
+var _limbo_ai_active: bool = false
 
 func _ready() -> void:
 	rng.randomize()
 	_setup_children()
 	_set_state(State.IDLE)
 	_setup_noise_manager()
+	_setup_limbo_ai()
 	_apply_default_model()
 	if player == null:
 		player = get_tree().get_first_node_in_group("player")
@@ -130,6 +135,8 @@ func _process(delta: float) -> void:
 	if not is_instance_valid(player):
 		player = null
 		return
+	if _limbo_ai_active:
+		return
 	_update_state_logic(delta)
 	_update_navigation(delta)
 	_update_audio(delta)
@@ -142,6 +149,37 @@ func _physics_process(delta: float) -> void:
 	_update_model_animation()
 	_update_vision()
 	_handle_noise_reactions()
+
+func _setup_limbo_ai() -> void:
+	if not use_limbo_ai or not ClassDB.class_exists("BTPlayer"):
+		return
+	var bt_player := BTPlayer.new()
+	bt_player.name = "LimboAI"
+	bt_player.update_mode = BTPlayer.PHYSICS
+	var behavior_tree := BehaviorTree.new()
+	var task_script := load("res://HowlerLimboTask.gd")
+	if task_script == null:
+		return
+	behavior_tree.set_root_task(task_script.new())
+	bt_player.behavior_tree = behavior_tree
+	var scene_root := get_tree().current_scene
+	if scene_root != null:
+		bt_player.set_scene_root_hint(scene_root)
+	add_child(bt_player)
+	_limbo_ai_active = true
+
+func _limbo_tick(delta: float) -> void:
+	if current_state == State.DEAD:
+		return
+	if player == null:
+		player = get_tree().get_first_node_in_group("player")
+	if not is_instance_valid(player):
+		player = null
+		return
+	_update_state_logic(delta)
+	_update_navigation(delta)
+	_update_audio(delta)
+	_update_debug_visuals()
 
 func _setup_children() -> void:
 	collision_shape = get_node_or_null("CollisionShape3D")

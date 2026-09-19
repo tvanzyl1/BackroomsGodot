@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://02beby4dp3s1"
-path="res://.godot/imported/stalker_lethal_ape_2.png-58945d6b0a044db51d89162ee1eee79c.ctex"
+path.s3tc="res://.godot/imported/stalker_lethal_ape_2.png-58945d6b0a044db51d89162ee1eee79c.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "f514c61221b1f5e45a36cd15cff2e8eb"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://stalker_lethal_ape_2.png"
-dest_files=["res://.godot/imported/stalker_lethal_ape_2.png-58945d6b0a044db51d89162ee1eee79c.ctex"]
+dest_files=["res://.godot/imported/stalker_lethal_ape_2.png-58945d6b0a044db51d89162ee1eee79c.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -40,4 +41,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=1
+detect_3d/compress_to=0
