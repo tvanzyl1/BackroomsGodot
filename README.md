@@ -21,4 +21,5 @@ To-do list:
 5.1 [x] Something like following noise when hearing it for a certain radius
 5.2 [x] follow player's last detected position, to make sure he doesn't just lose the player around a corner.
 5.3 [x] Wider view detection.
-6. A win state; when getting to the ending a message showing that you've exited the backrooms.
+6. [x] A win state; when getting to the ending a message showing that you've exited the backrooms.
+7. [x] A death state. When your health is 0, the camera falls to the ground and red covers the screen. Message pops up that you are dead and asks if you want to start again.

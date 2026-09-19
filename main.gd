@@ -5,6 +5,7 @@ const HEALTH_ORB_SCRIPT: Script = preload("res://HealthOrb.gd")
 const FEEDBACK_OVERLAY_SCRIPT: Script = preload("res://FeedbackOverlay.gd")
 const MAZE_SIZE: int = 17
 const CELL_SIZE: float = 3.2
+const EXIT_CELL := Vector2i(MAZE_SIZE - 2, MAZE_SIZE - 2)
 const WALL_HEIGHT: float = 3.0
 const WALL_THICKNESS: float = 0.18
 const HEALTH_ORB_COUNT: int = 3
@@ -21,9 +22,18 @@ var seed_label: Label
 var health_label: Label
 var health_bar: ProgressBar
 var feedback_overlay: Control
+var death_overlay: ColorRect
+var death_message: Label
+var end_overlay: ColorRect
+var end_message: Label
+var new_game_button: Button
 var quit_dialog: ConfirmationDialog
 var roof_lights: Array[Dictionary] = []
 var noise_manager: Node
+var game_finished: bool = false
+var game_over: bool = false
+var death_time: float = 0.0
+var exit_position: Vector3 = Vector3.ZERO
 
 var wall_material: StandardMaterial3D
 var floor_material: StandardMaterial3D
@@ -51,6 +61,9 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func new_game() -> void:
 	generation += 1
+	game_finished = false
+	game_over = false
+	death_time = 0.0
 	if is_instance_valid(howler):
 		howler.free()
 	howler = null
@@ -65,10 +78,19 @@ func new_game() -> void:
 	_generate_maze()
 	_build_maze()
 	_spawn_player()
+	death_overlay.visible = false
+	death_message.visible = false
+	end_overlay.visible = false
 	seed_label.text = "SECTOR %02d  //  SEED %08d" % [generation, rng.seed]
 	status_label.text = "Find the way out"
 
 func _process(delta: float) -> void:
+	if not game_finished and is_instance_valid(player) and player.global_position.distance_to(exit_position) < CELL_SIZE * 0.42:
+		_complete_maze()
+	if game_over and is_instance_valid(player):
+		death_time += delta
+		player.head.rotation.z = lerp_angle(player.head.rotation.z, -1.35, minf(delta * 2.5, 1.0))
+		player.camera.position.y = lerpf(player.camera.position.y, 0.35, minf(delta * 1.8, 1.0))
 	for state in roof_lights:
 		if state.broken:
 			continue
@@ -133,7 +155,6 @@ func _build_maze() -> void:
 				wall_body.name = "Wall_%d_%d" % [x, z]
 				maze_root.add_child(wall_body)
 				_add_box(wall_body, Vector3(CELL_SIZE, WALL_HEIGHT, CELL_SIZE), _cell_position(x, z) + Vector3(0.0, WALL_HEIGHT / 2.0, 0.0), wall_material)
-	var exit_cell := Vector2i(MAZE_SIZE - 2, MAZE_SIZE - 2)
 	var exit_marker := MeshInstance3D.new()
 	exit_marker.name = "ExitLight"
 	var exit_mesh := CylinderMesh.new()
@@ -141,7 +162,8 @@ func _build_maze() -> void:
 	exit_mesh.bottom_radius = 0.18
 	exit_mesh.height = 0.12
 	exit_marker.mesh = exit_mesh
-	exit_marker.position = _cell_position(exit_cell.x, exit_cell.y) + Vector3(0.0, 0.3, 0.0)
+	exit_position = _cell_position(EXIT_CELL.x, EXIT_CELL.y)
+	exit_marker.position = exit_position + Vector3(0.0, 0.3, 0.0)
 	exit_marker.material_override = exit_material
 	maze_root.add_child(exit_marker)
 	var exit_light := OmniLight3D.new()
@@ -284,7 +306,33 @@ func _update_health_bar(current_health: float, maximum_health: float) -> void:
 	health_label.text = "HEALTH  %d%%" % roundi(current_health / maximum_health * 100.0)
 
 func _on_player_died() -> void:
+	if game_finished or game_over:
+		return
+	game_over = true
 	status_label.text = "You were caught"
+	death_overlay.visible = true
+	death_message.visible = true
+	_show_end_state("YOU DIED", "PRESS R OR USE THE BUTTON BELOW TO TRY AGAIN")
+	if is_instance_valid(howler):
+		howler.queue_free()
+		howler = null
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+
+func _complete_maze() -> void:
+	game_finished = true
+	game_over = false
+	player.input_enabled = false
+	player.velocity = Vector3.ZERO
+	if is_instance_valid(howler):
+		howler.queue_free()
+		howler = null
+	status_label.text = "You escaped the backrooms"
+	_show_end_state("YOU ESCAPED THE BACKROOMS", "THE MAZE HAS RELEASED YOU")
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+
+func _show_end_state(title: String, subtitle: String) -> void:
+	end_message.text = "%s\n\n%s" % [title, subtitle]
+	end_overlay.visible = true
 
 func _spawn_howler() -> void:
 	var howler_scene: PackedScene = preload("res://Howler.tscn")
@@ -391,6 +439,53 @@ func _create_hud() -> void:
 	feedback_overlay = FEEDBACK_OVERLAY_SCRIPT.new()
 	feedback_overlay.name = "FeedbackOverlay"
 	layer.add_child(feedback_overlay)
+	death_overlay = ColorRect.new()
+	death_overlay.name = "DeathOverlay"
+	death_overlay.color = Color(0.36, 0.0, 0.0, 0.78)
+	death_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	death_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	death_overlay.visible = false
+	layer.add_child(death_overlay)
+	death_message = Label.new()
+	death_message.name = "DeathMessage"
+	death_message.text = "YOU DIED\n\nPRESS R TO RESTART"
+	death_message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	death_message.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	death_message.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	death_message.position = Vector2(-220.0, -90.0)
+	death_message.size = Vector2(440.0, 180.0)
+	death_message.add_theme_color_override("font_color", Color(1.0, 0.86, 0.78))
+	death_message.add_theme_font_size_override("font_size", 26)
+	death_message.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	death_message.visible = false
+	layer.add_child(death_message)
+	end_overlay = ColorRect.new()
+	end_overlay.name = "EndOverlay"
+	end_overlay.color = Color(0.015, 0.01, 0.008, 0.72)
+	end_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	end_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	end_overlay.visible = false
+	layer.add_child(end_overlay)
+	end_message = Label.new()
+	end_message.name = "EndMessage"
+	end_message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	end_message.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	end_message.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	end_message.position = Vector2(-360.0, -150.0)
+	end_message.size = Vector2(720.0, 180.0)
+	end_message.add_theme_color_override("font_color", Color(1.0, 0.9, 0.7))
+	end_message.add_theme_font_size_override("font_size", 28)
+	end_message.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	end_overlay.add_child(end_message)
+	new_game_button = Button.new()
+	new_game_button.name = "NewGameButton"
+	new_game_button.text = "NEW GAME"
+	new_game_button.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	new_game_button.position = Vector2(-110.0, 58.0)
+	new_game_button.size = Vector2(220.0, 48.0)
+	new_game_button.add_theme_font_size_override("font_size", 18)
+	new_game_button.pressed.connect(new_game)
+	end_overlay.add_child(new_game_button)
 	quit_dialog = ConfirmationDialog.new()
 	quit_dialog.title = "Leave the Maze?"
 	quit_dialog.dialog_text = "Are you sure you want to quit?"
