@@ -1,6 +1,9 @@
 extends CharacterBody3D
 class_name Howler
 
+signal health_changed(current_health: float, maximum_health: float)
+signal died
+
 enum State {
 	IDLE,
 	PATROL,
@@ -13,6 +16,10 @@ enum State {
 	STUNNED,
 	DEAD,
 }
+
+@export_group("Health")
+@export var max_health: float = 100.0
+@export var respawn_delay: float = 60.0
 
 @export_group("Movement")
 @export var patrol_speed: float = 2.0
@@ -72,6 +79,9 @@ enum State {
 
 var current_state: State = State.IDLE
 var state_name: String = "IDLE"
+var current_health: float = 100.0
+var respawn_timer: float = 0.0
+var is_dead: bool = false
 
 var player: Node3D
 var navigation_agent: NavigationAgent3D
@@ -100,6 +110,7 @@ var search_timer: float = 0.0
 var stalk_timer: float = 0.0
 var alert_timer: float = 0.0
 var attack_timer: float = 0.0
+var stun_timer: float = 0.0
 var last_howl_time: float = -999.0
 var last_breath_time: float = 0.0
 var last_path_update: float = 0.0
@@ -124,6 +135,7 @@ var _limbo_ai_active: bool = false
 
 func _ready() -> void:
 	rng.randomize()
+	current_health = max_health
 	_setup_children()
 	_set_state(State.IDLE)
 	_setup_noise_manager()
@@ -136,6 +148,7 @@ func _ready() -> void:
 	
 func _process(delta: float) -> void:
 	if current_state == State.DEAD:
+		respawn_timer += delta
 		return
 	if player == null:
 		player = get_tree().get_first_node_in_group("player")
@@ -542,8 +555,9 @@ func _handle_attack(delta: float) -> void:
 		_attack_window_open = false
 
 func _handle_stunned(delta: float) -> void:
+	stun_timer -= delta
 	velocity = Vector3.ZERO
-	if delta <= 0.0:
+	if stun_timer <= 0.0:
 		_set_state(State.PATROL)
 
 func _update_navigation(delta: float) -> void:
@@ -772,7 +786,10 @@ func _set_state(new_state: State) -> void:
 			_search_turn_dir = [-1.0, 1.0][randi() % 2]
 		State.ATTACK:
 			_attack_window_open = false
+		State.STUNNED:
+			stun_timer = 0.8
 		State.DEAD:
+			is_dead = true
 			velocity = Vector3.ZERO
 			if is_instance_valid(animation_player):
 				animation_player.stop()
@@ -783,9 +800,19 @@ func set_player_reference(player_ref: Node3D) -> void:
 		last_known_player_position = player.global_position
 
 func apply_damage(amount: float) -> void:
-	if current_state == State.DEAD:
+	if current_state == State.DEAD or amount <= 0.0:
 		return
-	_set_state(State.STUNNED)
+	current_health = maxf(current_health - amount, 0.0)
+	health_changed.emit(current_health, max_health)
+	if current_health <= 0.0:
+		current_health = 0.0
+		is_dead = true
+		respawn_timer = 0.0
+		_set_state(State.DEAD)
+		died.emit()
+		return
+	if current_state != State.STUNNED:
+		_set_state(State.STUNNED)
 	velocity = Vector3.ZERO
 
 func emit_noise(loudness: float, source: StringName = "") -> void:

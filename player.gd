@@ -18,6 +18,9 @@ enum BatteryMode {
 @export var acceleration: float = 18.0
 @export var maximum_health: float = 100.0
 @export var maximum_battery: float = 100.0
+@export var attack_range: float = 3.0
+@export var attack_damage: float = 10.0
+@export var attack_cooldown: float = 0.35
 @export var flashlight_jitter_min_delay: float = 2.5
 @export var flashlight_jitter_max_delay: float = 6.0
 @export var flashlight_jitter_duration: float = 0.08
@@ -37,6 +40,7 @@ var pitch: float = 0.0
 var input_enabled: bool = true
 var current_health: float
 var noise_timer: float = 0.0
+var attack_timer: float = 0.0
 
 func setup() -> void:
 	add_to_group("player")
@@ -109,6 +113,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		rotate_y(-event.relative.x * mouse_sensitivity)
 		pitch = clamp(pitch - event.relative.y * mouse_sensitivity, -1.35, 1.35)
 		head.rotation.x = pitch
+	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed and input_enabled:
+		_try_attack()
 	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F:
 		if current_battery <= 0.0 and battery_mode != BatteryMode.NEVER_DRAIN:
 			flashlight_enabled = false
@@ -120,6 +126,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
 func _process(delta: float) -> void:
+	attack_timer = maxf(0.0, attack_timer - delta)
 	if battery_mode == BatteryMode.NEVER_DRAIN:
 		current_battery = maximum_battery
 		flashlight.light_energy = flashlight_energy if flashlight_enabled else 0.0
@@ -158,6 +165,43 @@ func _update_flashlight_visibility() -> void:
 
 func _schedule_flashlight_jitter() -> void:
 	flashlight_jitter_delay = rng.randf_range(flashlight_jitter_min_delay, flashlight_jitter_max_delay)
+
+func _try_attack() -> void:
+	if attack_timer > 0.0 or not input_enabled:
+		return
+	var world := get_world_3d()
+	if world == null or camera == null:
+		return
+	var camera_origin := camera.global_position
+	var forward := -camera.global_transform.basis.z
+	var best_target: Node3D = null
+	var best_distance := INF
+	var howlers := get_tree().get_nodes_in_group("howler")
+	for candidate in howlers:
+		if candidate == null or not is_instance_valid(candidate):
+			continue
+		var to_target: Vector3 = candidate.global_position - camera_origin
+		var distance: float = to_target.length()
+		if distance > attack_range:
+			continue
+		var dot := forward.dot(to_target.normalized())
+		if dot < 0.2:
+			continue
+		var query := PhysicsRayQueryParameters3D.create(camera_origin, candidate.global_position)
+		query.exclude = [self]
+		var hit := world.direct_space_state.intersect_ray(query)
+		if not hit.is_empty() and hit.get("collider") != candidate:
+			continue
+		if distance < best_distance:
+			best_distance = distance
+			best_target = candidate
+	if best_target == null:
+		return
+	attack_timer = attack_cooldown
+	if best_target.has_method("apply_damage"):
+		best_target.apply_damage(attack_damage)
+		if best_target.has_method("emit_noise"):
+			best_target.emit_noise(0.9, &"player_attack")
 
 func _physics_process(delta: float) -> void:
 	if not input_enabled:

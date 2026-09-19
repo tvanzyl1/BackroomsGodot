@@ -33,9 +33,10 @@ To-do list:
 13.2. [x] Every second the flashlight is on, the battery reduces with 1%. When off, no reduction.
 13.3. [x] Three battery game states, 1. Battery never depletes, 2. Battery depletes when on, but recharges 1% per second it is off, 3. Battery depletes when on, but does not recharge.
 13.4. [x] The battery game states can be selected at the start of the game. This will help indicate difficulty.
-14. Player attack
-14.1. Left click when close to the Howler hits it.
-14.2. The Howler should start wiht 100 health on game starts
-14.3. The player attack should do 10 damage to the Howler.
-14.4. The Howler should die on 0 health.
-14.5. after 60 seconds of Howler death a new instance should be spawned in the maze.
+14. [x] Player attack
+14.1. [x] Left click when close to the Howler hits it.
+14.2. [x] The Howler should start wiht 100 health on game starts
+14.3. [x] The player attack should do 10 damage to the Howler.
+14.4. [x] The Howler should die on 0 health.
+14.5. [x] after 60 seconds of Howler death a new instance should be spawned in the maze.
+14.6. [x] When the player can see the Howler then the Howler's health bar should be visible. And purple. 

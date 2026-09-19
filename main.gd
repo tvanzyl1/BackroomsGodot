@@ -23,6 +23,8 @@ var health_label: Label
 var health_bar: ProgressBar
 var battery_label: Label
 var battery_bar: ProgressBar
+var howler_health_label: Label
+var howler_health_bar: ProgressBar
 var feedback_overlay: Control
 var death_overlay: ColorRect
 var death_message: Label
@@ -90,13 +92,16 @@ func new_game() -> void:
 	_generate_maze()
 	_build_maze()
 	_spawn_player()
-	player.input_enabled = false
-	howler.set_process(false)
-	howler.set_physics_process(false)
+	if is_instance_valid(player):
+		player.input_enabled = false
+	if is_instance_valid(howler):
+		howler.set_process(false)
+		howler.set_physics_process(false)
 	death_overlay.visible = false
 	death_message.visible = false
 	end_overlay.visible = false
-	start_overlay.visible = true
+	if is_instance_valid(start_overlay):
+		start_overlay.visible = true
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	seed_label.text = "SECTOR %02d  //  SEED %08d" % [generation, rng.seed]
 	status_label.text = "Find the way out"
@@ -104,6 +109,28 @@ func new_game() -> void:
 func _process(delta: float) -> void:
 	if not game_finished and is_instance_valid(player) and player.global_position.distance_to(exit_position) < CELL_SIZE * 0.42:
 		_complete_maze()
+	if is_instance_valid(howler):
+		if howler.get("is_dead") == true:
+			var elapsed := float(howler.get("respawn_timer")) + delta
+			howler.set("respawn_timer", elapsed)
+			if elapsed >= float(howler.get("respawn_delay")):
+				howler.queue_free()
+				howler = null
+				_spawn_howler()
+		else:
+			var player_can_see_howler := _player_can_see_howler(howler)
+			if player_can_see_howler:
+				if is_instance_valid(howler_health_bar):
+					howler_health_bar.visible = true
+					howler_health_bar.max_value = float(howler.get("max_health"))
+					howler_health_bar.value = float(howler.get("current_health"))
+				if is_instance_valid(howler_health_label):
+					howler_health_label.text = "HOWLER  %d%%" % roundi((float(howler.get("current_health")) / float(howler.get("max_health"))) * 100.0)
+			else:
+				if is_instance_valid(howler_health_bar):
+					howler_health_bar.visible = false
+				if is_instance_valid(howler_health_label):
+					howler_health_label.text = ""
 	if game_over and is_instance_valid(player):
 		death_time += delta
 		player.head.rotation.z = lerp_angle(player.head.rotation.z, -1.35, minf(delta * 2.5, 1.0))
@@ -321,9 +348,11 @@ func _add_lights() -> void:
 				maze_root.add_child(fixture)
 
 func _spawn_player() -> void:
-	if player:
+	if is_instance_valid(player):
 		player.queue_free()
 	player = PLAYER_SCRIPT.new()
+	if player == null:
+		return
 	player.name = "Player"
 	add_child(player)
 	player.position = _cell_position(1, 1) + Vector3(0.0, 0.03, 0.0)
@@ -391,6 +420,8 @@ func _show_end_state(title: String, subtitle: String) -> void:
 	end_overlay.visible = true
 
 func _start_game() -> void:
+	if not is_instance_valid(player):
+		return
 	game_started = true
 	player.set_battery_mode(selected_battery_mode)
 	player.input_enabled = true
@@ -399,18 +430,54 @@ func _start_game() -> void:
 	if is_instance_valid(howler):
 		howler.set_process(true)
 		howler.set_physics_process(true)
-	start_overlay.visible = false
+	if is_instance_valid(start_overlay):
+		start_overlay.visible = false
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 func _spawn_howler() -> void:
 	var howler_scene: PackedScene = preload("res://Howler.tscn")
 	howler = howler_scene.instantiate()
 	howler.name = "Howler"
+	howler.add_to_group("howler")
 	add_child(howler)
 	howler.position = _choose_howler_spawn_position()
 	howler.look_at(player.global_position, Vector3.UP)
 	if howler.has_method("set_player_reference"):
 		howler.set_player_reference(player)
+	howler.current_health = howler.max_health
+	howler.is_dead = false
+	howler.respawn_timer = 0.0
+	howler.health_changed.connect(_update_howler_health_bar)
+
+func _update_howler_health_bar(current_health: float, maximum_health: float) -> void:
+	if not is_instance_valid(howler_health_bar):
+		return
+	howler_health_bar.max_value = maximum_health
+	howler_health_bar.value = current_health
+	if is_instance_valid(howler_health_label):
+		howler_health_label.text = "HOWLER  %d%%" % roundi((current_health / maximum_health) * 100.0)
+
+func _player_can_see_howler(target: Node3D) -> bool:
+	if not is_instance_valid(player) or not is_instance_valid(target):
+		return false
+	var camera_node = player.get("camera")
+	if camera_node == null:
+		return false
+	var to_target: Vector3 = target.global_position - camera_node.global_position
+	var distance: float = to_target.length()
+	if distance > 25.0:
+		return false
+	var forward: Vector3 = -camera_node.global_transform.basis.z
+	var dot: float = forward.dot(to_target.normalized())
+	if dot < 0.15:
+		return false
+	var world := get_world_3d()
+	if world == null:
+		return false
+	var query := PhysicsRayQueryParameters3D.create(camera_node.global_position, target.global_position)
+	query.exclude = [player, target]
+	var hit := world.direct_space_state.intersect_ray(query)
+	return hit.is_empty() or hit.get("collider") == target
 
 func _choose_howler_spawn_position() -> Vector3:
 	var minimum_distance := CELL_SIZE * 3.0
@@ -531,6 +598,33 @@ func _create_hud() -> void:
 	battery_fill.bg_color = Color(0.52, 0.71, 1.0, 1.0)
 	battery_bar.add_theme_stylebox_override("fill", battery_fill)
 	panel.add_child(battery_bar)
+	howler_health_label = Label.new()
+	howler_health_label.position = Vector2(1020.0, 24.0)
+	howler_health_label.add_theme_color_override("font_color", Color(0.78, 0.52, 1.0))
+	howler_health_label.add_theme_font_size_override("font_size", 10)
+	howler_health_label.visible = false
+	layer.add_child(howler_health_label)
+	howler_health_bar = ProgressBar.new()
+	howler_health_bar.name = "HowlerHealthBar"
+	howler_health_bar.position = Vector2(1016.0, 38.0)
+	howler_health_bar.size = Vector2(220.0, 12.0)
+	howler_health_bar.show_percentage = false
+	howler_health_bar.min_value = 0.0
+	howler_health_bar.max_value = 100.0
+	howler_health_bar.value = 100.0
+	howler_health_bar.visible = false
+	var howler_background := StyleBoxFlat.new()
+	howler_background.bg_color = Color(0.1, 0.06, 0.14, 0.9)
+	howler_background.border_width_left = 1
+	howler_background.border_width_top = 1
+	howler_background.border_width_right = 1
+	howler_background.border_width_bottom = 1
+	howler_background.border_color = Color(0.42, 0.25, 0.6, 0.9)
+	howler_health_bar.add_theme_stylebox_override("background", howler_background)
+	var howler_fill := StyleBoxFlat.new()
+	howler_fill.bg_color = Color(0.58, 0.38, 0.95, 1.0)
+	howler_health_bar.add_theme_stylebox_override("fill", howler_fill)
+	layer.add_child(howler_health_bar)
 	var help := Label.new()
 	help.text = "WASD  MOVE     MOUSE  LOOK     R  NEW MAZE     Q  QUIT"
 	help.position = Vector2(24.0, 670.0)
