@@ -1,9 +1,13 @@
 class_name MazePlayer
 extends CharacterBody3D
 
+signal health_changed(current_health: float, maximum_health: float)
+signal died
+
 @export var move_speed: float = 4.5
 @export var mouse_sensitivity: float = 0.0025
 @export var acceleration: float = 18.0
+@export var maximum_health: float = 100.0
 @export var flashlight_jitter_min_delay: float = 2.5
 @export var flashlight_jitter_max_delay: float = 6.0
 @export var flashlight_jitter_duration: float = 0.08
@@ -19,6 +23,7 @@ var flashlight_jitter_delay: float = 0.0
 var rng := RandomNumberGenerator.new()
 var pitch: float = 0.0
 var input_enabled: bool = true
+var current_health: float
 
 func setup() -> void:
 	add_to_group("player")
@@ -52,9 +57,21 @@ func setup() -> void:
 
 func _ready() -> void:
 	rng.randomize()
+	current_health = maximum_health
 	setup()
+	health_changed.emit(current_health, maximum_health)
 	_schedule_flashlight_jitter()
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+
+func take_damage(amount: float) -> void:
+	if amount <= 0.0 or current_health <= 0.0:
+		return
+	current_health = maxf(current_health - amount, 0.0)
+	health_changed.emit(current_health, maximum_health)
+	if current_health <= 0.0:
+		input_enabled = false
+		velocity = Vector3.ZERO
+		died.emit()
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion and input_enabled:

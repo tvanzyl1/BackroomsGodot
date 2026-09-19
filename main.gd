@@ -15,6 +15,8 @@ var rng := RandomNumberGenerator.new()
 var generation: int = 0
 var status_label: Label
 var seed_label: Label
+var health_label: Label
+var health_bar: ProgressBar
 var quit_dialog: ConfirmationDialog
 var roof_lights: Array[Dictionary] = []
 
@@ -175,7 +177,19 @@ func _spawn_player() -> void:
 	player.name = "Player"
 	add_child(player)
 	player.position = _cell_position(1, 1) + Vector3(0.0, 0.03, 0.0)
+	player.health_changed.connect(_update_health_bar)
+	player.died.connect(_on_player_died)
 	_spawn_howler()
+
+func _update_health_bar(current_health: float, maximum_health: float) -> void:
+	if health_bar == null:
+		return
+	health_bar.max_value = maximum_health
+	health_bar.value = current_health
+	health_label.text = "HEALTH  %d%%" % roundi(current_health / maximum_health * 100.0)
+
+func _on_player_died() -> void:
+	status_label.text = "You were caught"
 
 func _spawn_howler() -> void:
 	var howler_scene: PackedScene = preload("res://Howler.tscn")
@@ -184,7 +198,7 @@ func _spawn_howler() -> void:
 	add_child(howler)
 	var spawn_offset := Vector3(0.0, 0.05, -1.4)
 	howler.position = player.position + spawn_offset
-	howler.rotation = player.rotation
+	howler.look_at(player.global_position, Vector3.UP)
 	if howler.has_method("set_player_reference"):
 		howler.set_player_reference(player)
 
@@ -229,7 +243,7 @@ func _create_hud() -> void:
 	var panel := ColorRect.new()
 	panel.color = Color(0.04, 0.035, 0.025, 0.82)
 	panel.position = Vector2(24.0, 24.0)
-	panel.size = Vector2(250.0, 74.0)
+	panel.size = Vector2(250.0, 84.0)
 	layer.add_child(panel)
 	seed_label = Label.new()
 	seed_label.position = Vector2(16.0, 10.0)
@@ -241,6 +255,32 @@ func _create_hud() -> void:
 	status_label.add_theme_color_override("font_color", Color(0.95, 0.9, 0.73))
 	status_label.add_theme_font_size_override("font_size", 16)
 	panel.add_child(status_label)
+	health_label = Label.new()
+	health_label.position = Vector2(16.0, 55.0)
+	health_label.add_theme_color_override("font_color", Color(0.95, 0.45, 0.24))
+	health_label.add_theme_font_size_override("font_size", 10)
+	health_label.text = "HEALTH  100%"
+	panel.add_child(health_label)
+	health_bar = ProgressBar.new()
+	health_bar.name = "HealthBar"
+	health_bar.position = Vector2(16.0, 67.0)
+	health_bar.size = Vector2(218.0, 10.0)
+	health_bar.show_percentage = false
+	health_bar.min_value = 0.0
+	health_bar.max_value = 100.0
+	health_bar.value = 100.0
+	var health_background := StyleBoxFlat.new()
+	health_background.bg_color = Color(0.12, 0.08, 0.06, 0.95)
+	health_background.border_width_left = 1
+	health_background.border_width_top = 1
+	health_background.border_width_right = 1
+	health_background.border_width_bottom = 1
+	health_background.border_color = Color(0.45, 0.22, 0.14, 0.9)
+	health_bar.add_theme_stylebox_override("background", health_background)
+	var health_fill := StyleBoxFlat.new()
+	health_fill.bg_color = Color(0.85, 0.22, 0.1, 1.0)
+	health_bar.add_theme_stylebox_override("fill", health_fill)
+	panel.add_child(health_bar)
 	var help := Label.new()
 	help.text = "WASD  MOVE     MOUSE  LOOK     R  NEW MAZE     Q  QUIT"
 	help.position = Vector2(24.0, 670.0)

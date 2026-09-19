@@ -21,7 +21,7 @@ enum State {
 @export var acceleration: float = 7.0
 @export var turn_speed: float = 4.5
 @export var attack_range: float = 1.8
-@export var attack_damage: float = 30.0
+@export var attack_damage: float = 10.0
 @export var attack_cooldown: float = 1.5
 @export var chase_cooldown: float = 4.0
 
