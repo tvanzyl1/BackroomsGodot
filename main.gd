@@ -1,11 +1,14 @@
 extends Node3D
 
 const PLAYER_SCRIPT: Script = preload("res://player.gd")
+const HEALTH_ORB_SCRIPT: Script = preload("res://HealthOrb.gd")
 
 const MAZE_SIZE: int = 17
 const CELL_SIZE: float = 3.2
 const WALL_HEIGHT: float = 3.0
 const WALL_THICKNESS: float = 0.18
+const HEALTH_ORB_COUNT: int = 3
+const HEALTH_ORB_AMOUNT: float = 25.0
 
 var maze: Array[Array] = []
 var maze_root: Node3D
@@ -140,7 +143,49 @@ func _build_maze() -> void:
 	exit_light.omni_range = 4.5
 	exit_light.position = exit_marker.position + Vector3(0.0, 1.0, 0.0)
 	maze_root.add_child(exit_light)
+	_spawn_health_orbs()
 	_add_lights()
+
+func _spawn_health_orbs() -> void:
+	var available_cells: Array[Vector2i] = []
+	var exit_cell := Vector2i(MAZE_SIZE - 2, MAZE_SIZE - 2)
+	for z in range(1, MAZE_SIZE - 1):
+		for x in range(1, MAZE_SIZE - 1):
+			var cell := Vector2i(x, z)
+			if not maze[z][x] and cell != Vector2i(1, 1) and cell != exit_cell:
+				available_cells.append(cell)
+	available_cells.shuffle()
+	for index in range(mini(HEALTH_ORB_COUNT, available_cells.size())):
+		var orb := Area3D.new()
+		orb.name = "HealthOrb_%d" % index
+		orb.set_script(HEALTH_ORB_SCRIPT)
+		orb.heal_amount = HEALTH_ORB_AMOUNT
+		orb.position = _cell_position(available_cells[index].x, available_cells[index].y) + Vector3(0.0, 0.65, 0.0)
+		orb.collision_layer = 0
+		orb.collision_mask = 1
+		var collision := CollisionShape3D.new()
+		var shape := SphereShape3D.new()
+		shape.radius = 0.55
+		collision.shape = shape
+		orb.add_child(collision)
+		var visual := MeshInstance3D.new()
+		var mesh := SphereMesh.new()
+		mesh.radius = 0.22
+		mesh.height = 0.44
+		visual.mesh = mesh
+		var material := StandardMaterial3D.new()
+		material.albedo_color = Color(0.15, 1.0, 0.5)
+		material.emission_enabled = true
+		material.emission = Color(0.05, 0.9, 0.25)
+		material.emission_energy_multiplier = 4.0
+		visual.material_override = material
+		orb.add_child(visual)
+		var light := OmniLight3D.new()
+		light.light_color = Color(0.15, 1.0, 0.4)
+		light.light_energy = 1.4
+		light.omni_range = 2.8
+		orb.add_child(light)
+		maze_root.add_child(orb)
 
 func _add_lights() -> void:
 	roof_lights.clear()

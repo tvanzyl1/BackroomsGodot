@@ -73,6 +73,12 @@ func take_damage(amount: float) -> void:
 		velocity = Vector3.ZERO
 		died.emit()
 
+func restore_health(amount: float) -> void:
+	if amount <= 0.0 or current_health <= 0.0:
+		return
+	current_health = minf(current_health + amount, maximum_health)
+	health_changed.emit(current_health, maximum_health)
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion and input_enabled:
 		rotate_y(-event.relative.x * mouse_sensitivity)
