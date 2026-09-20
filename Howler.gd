@@ -31,6 +31,7 @@ enum State {
 @export_range(0.0, 1.0, 0.05) var attack_health_fraction: float = 0.4
 @export var attack_cooldown: float = 1.5
 @export var chase_cooldown: float = 4.0
+@export_range(0.0, 1.0, 0.05) var aggression: float = 0.0
 
 @export_group("Vision")
 @export var vision_range: float = 18.0
@@ -382,7 +383,10 @@ func _on_noise_emitted(position: Vector3, loudness: float, source: StringName) -
 		last_known_player_position = position if source == &"player_movement" else last_known_player_position
 		_target_position = position
 		if current_state in [State.IDLE, State.PATROL, State.SEARCH]:
-			_set_state(State.STALK if perceived_loudness >= stalk_loudness else State.INVESTIGATE)
+			if perceived_loudness >= stalk_loudness and rng.randf() < aggression * 0.8:
+				_set_state(State.CHASE)
+			else:
+				_set_state(State.STALK if perceived_loudness >= stalk_loudness else State.INVESTIGATE)
 			investigate_timer = investigate_timeout
 
 func _update_state_logic(delta: float) -> void:
@@ -468,9 +472,10 @@ func _handle_stalk(delta: float) -> void:
 		return
 	if stalk_timer <= 0.0:
 		var roll := rng.randf()
-		if roll < 0.35:
+		var chase_threshold := 0.3 + aggression * 0.55
+		if roll < (1.0 - chase_threshold) * 0.5:
 			_set_state(State.PATROL)
-		elif roll < 0.7:
+		elif roll < 1.0 - chase_threshold:
 			_set_state(State.SEARCH)
 		else:
 			_emit_howl_if_possible("stalk")
@@ -717,7 +722,10 @@ func _handle_noise_reactions() -> void:
 	if StringName(loudest.get("source", &"")) == &"player_movement":
 		last_known_player_position = _noise_position
 	if current_state in [State.IDLE, State.PATROL, State.SEARCH]:
-		_set_state(State.STALK if best_loudness >= stalk_loudness else State.INVESTIGATE)
+		if best_loudness >= stalk_loudness and rng.randf() < aggression * 0.8:
+			_set_state(State.CHASE)
+		else:
+			_set_state(State.STALK if best_loudness >= stalk_loudness else State.INVESTIGATE)
 		investigate_timer = investigate_timeout
 		_target_position = _noise_position
 
@@ -774,7 +782,8 @@ func _set_state(new_state: State) -> void:
 		State.INVESTIGATE:
 			investigate_timer = investigate_timeout
 		State.STALK:
-			stalk_timer = rng.randf_range(stalk_min_duration, stalk_max_duration)
+			var stalk_scale := lerpf(1.0, 0.35, aggression)
+			stalk_timer = rng.randf_range(stalk_min_duration, stalk_max_duration) * stalk_scale
 		State.ALERT:
 			alert_timer = rng.randf_range(howl_delay_min, howl_delay_max)
 		State.CHASE:

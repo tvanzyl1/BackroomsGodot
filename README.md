@@ -47,3 +47,6 @@ To-do list:
 16.3. [x] When the player finds the exit, the level is increased.
 16.4. [x] On level increase, the map becomes bigger. i.e. bigger maze.
 16.5. [x] On level increase, the Howler gets 10% more health.
+17. [x] Howler increasing aggressiveness
+17.1 [x] As the player progresses through levels, the Howler becomes more aggressive, with less stalking and more chasing.
+17.2 [x] The player can run using the `shift` key, which increases speed and movement noise.

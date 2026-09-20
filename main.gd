@@ -458,6 +458,7 @@ func _spawn_howler() -> void:
 	howler.name = "Howler"
 	howler.add_to_group("howler")
 	howler.max_health = HOWLER_BASE_HEALTH * pow(1.1, level - 1)
+	howler.aggression = clampf((level - 1) * 0.15, 0.0, 0.9)
 	add_child(howler)
 	howler.position = _choose_howler_spawn_position()
 	howler.look_at(player.global_position, Vector3.UP)

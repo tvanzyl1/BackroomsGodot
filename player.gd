@@ -14,6 +14,8 @@ enum BatteryMode {
 }
 
 @export var move_speed: float = 4.5
+@export var sprint_multiplier: float = 1.65
+@export var sprint_noise_multiplier: float = 1.35
 @export var mouse_sensitivity: float = 0.0025
 @export var acceleration: float = 18.0
 @export var maximum_health: float = 100.0
@@ -208,14 +210,18 @@ func _physics_process(delta: float) -> void:
 		return
 	var direction := Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
 	var wish := (transform.basis * Vector3(direction.x, 0.0, direction.y)).normalized()
-	velocity.x = move_toward(velocity.x, wish.x * move_speed, acceleration * delta)
-	velocity.z = move_toward(velocity.z, wish.z * move_speed, acceleration * delta)
+	var sprinting := Input.is_action_pressed("sprint") and wish.length_squared() > 0.01
+	var current_move_speed := move_speed * sprint_multiplier if sprinting else move_speed
+	velocity.x = move_toward(velocity.x, wish.x * current_move_speed, acceleration * delta)
+	velocity.z = move_toward(velocity.z, wish.z * current_move_speed, acceleration * delta)
 	velocity.y = 0.0
 	move_and_slide()
 	noise_timer -= delta
 	if noise_timer <= 0.0 and wish.length_squared() > 0.01:
 		var noise_manager := get_tree().get_first_node_in_group("noise_manager")
 		if noise_manager and noise_manager.has_method("emit_noise"):
-			var movement_loudness := clampf(velocity.length() / move_speed, 0.0, 1.0) * 0.8
+			var movement_loudness := clampf(velocity.length() / current_move_speed, 0.0, 1.0) * 0.8
+			if sprinting:
+				movement_loudness *= sprint_noise_multiplier
 			noise_manager.emit_noise(global_position, movement_loudness, &"player_movement")
 		noise_timer = 0.45
