@@ -64,13 +64,13 @@ func _input(event: InputEvent) -> void:
 
 func _handle_touch(event: InputEventScreenTouch) -> void:
 	if event.pressed:
-		if event.position.x < size.x * 0.45:
-			if move_touch_id != -1 and move_touch_id != event.index:
-				_reset_move_state()
+		if _is_action_button_position(event.position):
+			return
+		if move_touch_id == -1 and event.position.x < size.x * 0.45:
 			move_touch_id = event.index
 			move_origin = event.position
 			_set_move(event.position)
-		elif event.position.x >= size.x * 0.45 and not _is_action_button_position(event.position) and look_touch_id == -1:
+		elif look_touch_id == -1:
 			look_touch_id = event.index
 	else:
 		if event.index == move_touch_id:
