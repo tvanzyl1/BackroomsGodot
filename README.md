@@ -7,7 +7,7 @@ A small desktop-first first-person maze prototype for Godot 4.7.2 stable.
 1. Open `project.godot` in Godot 4.7.2.
 2. Press Play. A new maze is generated on every run.
 3. Use `WASD` to move and the mouse to look.
-4. Press `R` to generate another maze. Find the orange light at the far end.
+4. Press `R` to start a new game. Find the orange light at the far end to advance to the next level.
 5. Press `Escape` to release the mouse cursor.
 
 The maze, collision, lighting, player, and HUD are created procedurally at runtime. No external assets are required.
@@ -41,3 +41,9 @@ To-do list:
 14.5. [x] After 10 seconds of Howler death a new instance should be spawned in the maze.
 14.6. [x] When the player can see the Howler then the Howler's health bar should be visible. And purple. 
 15. [x] When the Howler dies, it should disappear instantly and respawn 10 seconds later.
+16. [x] Add levelling.
+16.1. [x] When the player presses R for a new game the user should be prompted if they are sure as this will take them back to level 1
+16.2. [x] The game starts on level 1
+16.3. [x] When the player finds the exit, the level is increased.
+16.4. [x] On level increase, the map becomes bigger. i.e. bigger maze.
+16.5. [x] On level increase, the Howler gets 10% more health.

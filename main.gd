@@ -3,13 +3,13 @@ extends Node3D
 const PLAYER_SCRIPT: Script = preload("res://player.gd")
 const HEALTH_ORB_SCRIPT: Script = preload("res://HealthOrb.gd")
 const FEEDBACK_OVERLAY_SCRIPT: Script = preload("res://FeedbackOverlay.gd")
-const MAZE_SIZE: int = 17
+const BASE_MAZE_SIZE: int = 17
 const CELL_SIZE: float = 3.2
-const EXIT_CELL := Vector2i(MAZE_SIZE - 2, MAZE_SIZE - 2)
 const WALL_HEIGHT: float = 3.0
 const WALL_THICKNESS: float = 0.18
 const HEALTH_ORB_COUNT: int = 3
 const HEALTH_ORB_AMOUNT: float = 25.0
+const HOWLER_BASE_HEALTH: float = 100.0
 
 var maze: Array[Array] = []
 var maze_root: Node3D
@@ -17,6 +17,8 @@ var howler: Node3D
 var player: MazePlayer
 var rng := RandomNumberGenerator.new()
 var generation: int = 0
+var level: int = 1
+var maze_size: int = BASE_MAZE_SIZE
 var status_label: Label
 var seed_label: Label
 var health_label: Label
@@ -37,6 +39,7 @@ var start_button: Button
 var selected_battery_mode: int = MazePlayer.BatteryMode.DRAIN_AND_RECHARGE_WHEN_OFF
 var battery_mode_buttons: Array[Button] = []
 var quit_dialog: ConfirmationDialog
+var new_game_dialog: ConfirmationDialog
 var roof_lights: Array[Dictionary] = []
 var noise_manager: Node
 var game_finished: bool = false
@@ -61,18 +64,22 @@ func _ready() -> void:
 	new_game()
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("new_game"):
+		_request_new_game()
+		return
 	if not game_started and event is InputEventKey and event.pressed:
 		_start_game()
 		return
-	if event.is_action_pressed("new_game"):
-		new_game()
 	if event.is_action_pressed("quit_game") and not quit_dialog.visible:
 		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 		quit_dialog.popup_centered()
 	if event is InputEventMouseButton and event.pressed:
 		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
-func new_game() -> void:
+func new_game(reset_level: bool = true, auto_start: bool = false) -> void:
+	if reset_level:
+		level = 1
+	maze_size = BASE_MAZE_SIZE + (level - 1) * 2
 	generation += 1
 	game_finished = false
 	game_over = false
@@ -101,10 +108,16 @@ func new_game() -> void:
 	death_message.visible = false
 	end_overlay.visible = false
 	if is_instance_valid(start_overlay):
-		start_overlay.visible = true
+		start_overlay.visible = not auto_start
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
-	seed_label.text = "SECTOR %02d  //  SEED %08d" % [generation, rng.seed]
+	seed_label.text = "LEVEL %02d  //  SECTOR %02d  //  SEED %08d" % [level, generation, rng.seed]
 	status_label.text = "Find the way out"
+	if auto_start:
+		_start_game()
+
+func _request_new_game() -> void:
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	new_game_dialog.popup_centered()
 
 func _process(delta: float) -> void:
 	if not game_finished and is_instance_valid(player) and player.global_position.distance_to(exit_position) < CELL_SIZE * 0.42:
@@ -158,9 +171,9 @@ func _process(delta: float) -> void:
 
 func _generate_maze() -> void:
 	maze.clear()
-	for z in range(MAZE_SIZE):
+	for z in range(maze_size):
 		var row: Array = []
-		for x in range(MAZE_SIZE):
+		for x in range(maze_size):
 			row.append(true)
 		maze.append(row)
 	var stack: Array[Vector2i] = [Vector2i(1, 1)]
@@ -170,7 +183,7 @@ func _generate_maze() -> void:
 		var options: Array[Vector2i] = []
 		for direction in [Vector2i(2, 0), Vector2i(-2, 0), Vector2i(0, 2), Vector2i(0, -2)]:
 			var next: Vector2i = current + direction
-			if next.x > 0 and next.x < MAZE_SIZE - 1 and next.y > 0 and next.y < MAZE_SIZE - 1 and maze[next.y][next.x]:
+			if next.x > 0 and next.x < maze_size - 1 and next.y > 0 and next.y < maze_size - 1 and maze[next.y][next.x]:
 				options.append(next)
 		if options.is_empty():
 			stack.pop_back()
@@ -181,16 +194,16 @@ func _generate_maze() -> void:
 			stack.append(next)
 	# Open a few unsettling sightlines so the maze feels less grid-perfect.
 	for index in range(7):
-		var x := rng.randi_range(1, MAZE_SIZE - 2)
-		var z := rng.randi_range(1, MAZE_SIZE - 2)
+		var x := rng.randi_range(1, maze_size - 2)
+		var z := rng.randi_range(1, maze_size - 2)
 		if (x + z) % 2 == 1:
 			maze[z][x] = false
 	_add_oversized_rooms()
 
 func _add_oversized_rooms() -> void:
 	var room_candidates: Array[Vector2i] = []
-	for z in range(1, MAZE_SIZE - 1):
-		for x in range(1, MAZE_SIZE - 1):
+	for z in range(1, maze_size - 1):
+		for x in range(1, maze_size - 1):
 			if not maze[z][x]:
 				room_candidates.append(Vector2i(x, z))
 	room_candidates.shuffle()
@@ -199,31 +212,31 @@ func _add_oversized_rooms() -> void:
 		if room_candidates.is_empty():
 			break
 		var center: Vector2i = room_candidates.pop_back()
-		if center == Vector2i(1, 1) or center == EXIT_CELL:
+		if center == Vector2i(1, 1) or center == _exit_cell():
 			continue
 		var half_width := rng.randi_range(1, 3)
 		var half_height := rng.randi_range(1, 3)
 		var min_x := maxi(1, center.x - half_width)
-		var max_x := mini(MAZE_SIZE - 2, center.x + half_width)
+		var max_x := mini(maze_size - 2, center.x + half_width)
 		var min_z := maxi(1, center.y - half_height)
-		var max_z := mini(MAZE_SIZE - 2, center.y + half_height)
+		var max_z := mini(maze_size - 2, center.y + half_height)
 		for z in range(min_z, max_z + 1):
 			for x in range(min_x, max_x + 1):
-				if Vector2i(x, z) != Vector2i(1, 1) and Vector2i(x, z) != EXIT_CELL:
+				if Vector2i(x, z) != Vector2i(1, 1) and Vector2i(x, z) != _exit_cell():
 					maze[z][x] = false
 
 func _build_maze() -> void:
 	var floor_body := StaticBody3D.new()
 	floor_body.name = "Floor"
 	maze_root.add_child(floor_body)
-	_add_box(floor_body, Vector3(MAZE_SIZE * CELL_SIZE, 0.0, MAZE_SIZE * CELL_SIZE), Vector3(0.0, -0.12, 0.0), floor_material)
+	_add_box(floor_body, Vector3(maze_size * CELL_SIZE, 0.0, maze_size * CELL_SIZE), Vector3(0.0, -0.12, 0.0), floor_material)
 	_add_navigation_region()
 	var ceiling_body := StaticBody3D.new()
 	ceiling_body.name = "Ceiling"
 	maze_root.add_child(ceiling_body)
-	_add_box(ceiling_body, Vector3(MAZE_SIZE * CELL_SIZE, 0.18, MAZE_SIZE * CELL_SIZE), Vector3(0.0, WALL_HEIGHT, 0.0), ceiling_material)
-	for z in range(MAZE_SIZE):
-		for x in range(MAZE_SIZE):
+	_add_box(ceiling_body, Vector3(maze_size * CELL_SIZE, 0.18, maze_size * CELL_SIZE), Vector3(0.0, WALL_HEIGHT, 0.0), ceiling_material)
+	for z in range(maze_size):
+		for x in range(maze_size):
 			if maze[z][x]:
 				var wall_body := StaticBody3D.new()
 				wall_body.name = "Wall_%d_%d" % [x, z]
@@ -236,7 +249,8 @@ func _build_maze() -> void:
 	exit_mesh.bottom_radius = 0.18
 	exit_mesh.height = 0.12
 	exit_marker.mesh = exit_mesh
-	exit_position = _cell_position(EXIT_CELL.x, EXIT_CELL.y)
+	var exit_cell := _exit_cell()
+	exit_position = _cell_position(exit_cell.x, exit_cell.y)
 	exit_marker.position = exit_position + Vector3(0.0, 0.3, 0.0)
 	exit_marker.material_override = exit_material
 	maze_root.add_child(exit_marker)
@@ -257,8 +271,8 @@ func _add_navigation_region() -> void:
 	var vertex_indices: Dictionary = {}
 	var polygons: Array[PackedInt32Array] = []
 	var half_cell := CELL_SIZE * 0.5
-	for z in range(MAZE_SIZE):
-		for x in range(MAZE_SIZE):
+	for z in range(maze_size):
+		for x in range(maze_size):
 			if maze[z][x]:
 				continue
 			var center := _cell_position(x, z) + Vector3(0.0, 0.02, 0.0)
@@ -284,9 +298,9 @@ func _add_navigation_region() -> void:
 
 func _spawn_health_orbs() -> void:
 	var available_cells: Array[Vector2i] = []
-	var exit_cell := Vector2i(MAZE_SIZE - 2, MAZE_SIZE - 2)
-	for z in range(1, MAZE_SIZE - 1):
-		for x in range(1, MAZE_SIZE - 1):
+	var exit_cell := _exit_cell()
+	for z in range(1, maze_size - 1):
+		for x in range(1, maze_size - 1):
 			var cell := Vector2i(x, z)
 			if not maze[z][x] and cell != Vector2i(1, 1) and cell != exit_cell:
 				available_cells.append(cell)
@@ -325,8 +339,8 @@ func _spawn_health_orbs() -> void:
 
 func _add_lights() -> void:
 	roof_lights.clear()
-	for z in range(1, MAZE_SIZE, 4):
-		for x in range(1, MAZE_SIZE, 4):
+	for z in range(1, maze_size, 4):
+		for x in range(1, maze_size, 4):
 			if not maze[z][x]:
 				var light := OmniLight3D.new()
 				light.light_color = Color(1.0, 0.78, 0.48)
@@ -415,9 +429,9 @@ func _complete_maze() -> void:
 	if is_instance_valid(howler):
 		howler.queue_free()
 		howler = null
-	status_label.text = "You escaped the backrooms"
-	_show_end_state("YOU ESCAPED THE BACKROOMS", "THE MAZE HAS RELEASED YOU")
-	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	level += 1
+	maze_size = BASE_MAZE_SIZE + (level - 1) * 2
+	new_game(false, true)
 
 func _show_end_state(title: String, subtitle: String) -> void:
 	end_message.text = "%s\n\n%s" % [title, subtitle]
@@ -443,6 +457,7 @@ func _spawn_howler() -> void:
 	howler = howler_scene.instantiate()
 	howler.name = "Howler"
 	howler.add_to_group("howler")
+	howler.max_health = HOWLER_BASE_HEALTH * pow(1.1, level - 1)
 	add_child(howler)
 	howler.position = _choose_howler_spawn_position()
 	howler.look_at(player.global_position, Vector3.UP)
@@ -486,8 +501,8 @@ func _player_can_see_howler(target: Node3D) -> bool:
 func _choose_howler_spawn_position() -> Vector3:
 	var minimum_distance := CELL_SIZE * 3.0
 	var candidates: Array[Vector3] = []
-	for z in range(1, MAZE_SIZE - 1):
-		for x in range(1, MAZE_SIZE - 1):
+	for z in range(1, maze_size - 1):
+		for x in range(1, maze_size - 1):
 			if maze[z][x]:
 				continue
 			var candidate := _cell_position(x, z)
@@ -498,7 +513,10 @@ func _choose_howler_spawn_position() -> Vector3:
 	return player.position + Vector3(0.0, 0.05, -1.4)
 
 func _cell_position(x: int, z: int) -> Vector3:
-	return Vector3((x - MAZE_SIZE / 2.0 + 0.5) * CELL_SIZE, 0.0, (z - MAZE_SIZE / 2.0 + 0.5) * CELL_SIZE)
+	return Vector3((x - maze_size / 2.0 + 0.5) * CELL_SIZE, 0.0, (z - maze_size / 2.0 + 0.5) * CELL_SIZE)
+
+func _exit_cell() -> Vector2i:
+	return Vector2i(maze_size - 2, maze_size - 2)
 
 func _add_box(parent: Node3D, size: Vector3, position: Vector3, material: Material) -> void:
 	var mesh_instance := MeshInstance3D.new()
@@ -630,7 +648,7 @@ func _create_hud() -> void:
 	howler_health_bar.add_theme_stylebox_override("fill", howler_fill)
 	layer.add_child(howler_health_bar)
 	var help := Label.new()
-	help.text = "WASD  MOVE     MOUSE  LOOK     R  NEW MAZE     Q  QUIT"
+	help.text = "WASD  MOVE     MOUSE  LOOK     R  NEW GAME     Q  QUIT"
 	help.position = Vector2(24.0, 670.0)
 	help.add_theme_color_override("font_color", Color(0.62, 0.56, 0.42, 0.9))
 	help.add_theme_font_size_override("font_size", 12)
@@ -761,6 +779,13 @@ func _create_hud() -> void:
 	quit_dialog.cancel_button_text = "Stay"
 	quit_dialog.confirmed.connect(_quit_game)
 	layer.add_child(quit_dialog)
+	new_game_dialog = ConfirmationDialog.new()
+	new_game_dialog.title = "Start a New Game?"
+	new_game_dialog.dialog_text = "Your progress will be reset to level 1. Are you sure?"
+	new_game_dialog.ok_button_text = "Restart"
+	new_game_dialog.cancel_button_text = "Stay"
+	new_game_dialog.confirmed.connect(new_game)
+	layer.add_child(new_game_dialog)
 
 func _selected_start_mode(mode: int) -> void:
 	selected_battery_mode = clampi(mode, MazePlayer.BatteryMode.NEVER_DRAIN, MazePlayer.BatteryMode.DRAIN_NO_RECHARGE)
