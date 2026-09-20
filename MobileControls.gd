@@ -25,6 +25,8 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_RESIZED:
 		_layout_action_buttons()
 		queue_redraw()
+	elif what == NOTIFICATION_WM_WINDOW_FOCUS_OUT:
+		_reset_touch_state()
 
 func _layout_action_buttons() -> void:
 	if action_buttons.size() < 3:
@@ -52,7 +54,9 @@ func _create_button(label: String, button_size: Vector2) -> Button:
 	add_child(button)
 	return button
 
-func _gui_input(event: InputEvent) -> void:
+func _input(event: InputEvent) -> void:
+	if not visible:
+		return
 	if event is InputEventScreenTouch:
 		_handle_touch(event)
 	elif event is InputEventScreenDrag:
@@ -60,18 +64,35 @@ func _gui_input(event: InputEvent) -> void:
 
 func _handle_touch(event: InputEventScreenTouch) -> void:
 	if event.pressed:
-		if event.position.x < size.x * 0.45 and move_touch_id == -1:
+		if event.position.x < size.x * 0.45:
+			if move_touch_id != -1 and move_touch_id != event.index:
+				_reset_move_state()
 			move_touch_id = event.index
 			move_origin = event.position
 			_set_move(event.position)
-		elif event.position.x >= size.x * 0.45 and look_touch_id == -1:
+		elif event.position.x >= size.x * 0.45 and not _is_action_button_position(event.position) and look_touch_id == -1:
 			look_touch_id = event.index
 	else:
 		if event.index == move_touch_id:
-			move_touch_id = -1
-			_set_move(Vector2.ZERO)
+			_reset_move_state()
 		elif event.index == look_touch_id:
 			look_touch_id = -1
+
+func _reset_touch_state() -> void:
+	_reset_move_state()
+	look_touch_id = -1
+
+func _reset_move_state() -> void:
+	move_touch_id = -1
+	move_value = Vector2.ZERO
+	move_changed.emit(move_value)
+	queue_redraw()
+
+func _is_action_button_position(position: Vector2) -> bool:
+	for button in action_buttons:
+		if Rect2(button.position, button.size).has_point(position):
+			return true
+	return false
 
 func _handle_drag(event: InputEventScreenDrag) -> void:
 	if event.index == move_touch_id:
