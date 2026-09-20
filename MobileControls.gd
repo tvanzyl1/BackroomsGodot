@@ -9,6 +9,7 @@ signal sprint_changed(pressed: bool)
 
 var move_touch_id: int = -1
 var look_touch_id: int = -1
+var look_position := Vector2.ZERO
 var move_value := Vector2.ZERO
 var move_origin := Vector2.ZERO
 var move_radius: float = 72.0
@@ -72,15 +73,18 @@ func _handle_touch(event: InputEventScreenTouch) -> void:
 			_set_move(event.position)
 		elif look_touch_id == -1:
 			look_touch_id = event.index
+			look_position = event.position
 	else:
 		if event.index == move_touch_id:
 			_reset_move_state()
 		elif event.index == look_touch_id:
 			look_touch_id = -1
+			look_position = Vector2.ZERO
 
 func _reset_touch_state() -> void:
 	_reset_move_state()
 	look_touch_id = -1
+	look_position = Vector2.ZERO
 
 func _reset_move_state() -> void:
 	move_touch_id = -1
@@ -98,7 +102,9 @@ func _handle_drag(event: InputEventScreenDrag) -> void:
 	if event.index == move_touch_id:
 		_set_move(event.position)
 	elif event.index == look_touch_id:
-		look_changed.emit(event.relative)
+		var look_delta := event.position - look_position
+		look_position = event.position
+		look_changed.emit(look_delta.limit_length(64.0))
 
 func _set_move(position: Vector2) -> void:
 	var offset := position - move_origin
