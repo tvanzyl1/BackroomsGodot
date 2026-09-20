@@ -35,7 +35,9 @@ enum State {
 
 @export_group("Vision")
 @export var vision_range: float = 18.0
+@export var flashlight_vision_range: float = 27.0
 @export var vision_angle: float = 110.0
+@export var flashlight_beam_detection_range: float = 24.0
 @export var vision_check_interval: float = 0.2
 @export var player_lose_sight_threshold: float = 0.2
 
@@ -651,13 +653,19 @@ func _update_vision() -> void:
 			_set_state(State.ALERT)
 		elif current_state == State.CHASE:
 			last_known_player_position = player.global_position
+	elif current_state in [State.IDLE, State.PATROL, State.SEARCH, State.INVESTIGATE] and _can_see_flashlight():
+		last_known_player_position = player.global_position
+		_noise_position = player.global_position
+		investigate_timer = investigate_timeout
+		_set_state(State.INVESTIGATE)
 
 func _can_see_player() -> bool:
 	if player == null or not is_instance_valid(player):
 		return false
 	var to_player: Vector3 = player.global_position - vision_origin.global_position
 	var distance := to_player.length()
-	if distance > vision_range:
+	var current_vision_range := flashlight_vision_range if _is_player_flashlight_active() else vision_range
+	if distance > current_vision_range:
 		return false
 	var forward := -transform.basis.z
 	var angle := rad_to_deg(forward.angle_to(to_player.normalized()))
@@ -670,6 +678,34 @@ func _can_see_player() -> bool:
 	if result.size() > 0 and result.get("collider") != player:
 		return false
 	return true
+
+func _can_see_flashlight() -> bool:
+	if not _is_player_flashlight_active() or player == null or not is_instance_valid(player):
+		return false
+	var camera := player.get("camera") as Camera3D
+	if camera == null:
+		return false
+	var to_howler := vision_origin.global_position - camera.global_position
+	var distance := to_howler.length()
+	if distance > flashlight_beam_detection_range:
+		return false
+	var beam_forward := -camera.global_transform.basis.z
+	var beam_angle := deg_to_rad(16.0)
+	var beam_dot := beam_forward.dot(to_howler.normalized())
+	if beam_dot < cos(beam_angle):
+		return false
+	var query := PhysicsRayQueryParameters3D.create(camera.global_position, vision_origin.global_position)
+	query.exclude = [self, player]
+	var result := get_world_3d().direct_space_state.intersect_ray(query)
+	if result.is_empty():
+		return true
+	var collider := result.get("collider") as Node
+	return collider == self or (collider != null and is_ancestor_of(collider))
+
+func _is_player_flashlight_active() -> bool:
+	if player == null or not is_instance_valid(player):
+		return false
+	return bool(player.get("flashlight_enabled")) and float(player.get("current_battery")) > 0.0
 
 func _distance_to_player() -> float:
 	if player == null:

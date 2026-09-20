@@ -53,3 +53,6 @@ To-do list:
 18. [x] Player Walking and running sounds
 18.1. [x] Implement walking sounds using Audio/PlayerWalking.mp3
 18.2. [x] Implement running sound using Audio/PlayerRunning.mp3
+19. [x] Howler flashlight detection
+19.1. [x] Flashlight increases the Howler's direct vision range.
+19.2. [x] Howler investigates when the flashlight beam reaches it outside its vision cone.
