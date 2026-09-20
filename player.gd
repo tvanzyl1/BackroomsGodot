@@ -17,6 +17,7 @@ enum BatteryMode {
 @export var sprint_multiplier: float = 1.65
 @export var sprint_noise_multiplier: float = 1.35
 @export var mouse_sensitivity: float = 0.0025
+@export var mobile_look_speed: float = 2.8
 @export var acceleration: float = 18.0
 @export var maximum_health: float = 100.0
 @export var maximum_battery: float = 100.0
@@ -46,6 +47,7 @@ var current_health: float
 var noise_timer: float = 0.0
 var attack_timer: float = 0.0
 var mobile_move := Vector2.ZERO
+var mobile_look := Vector2.ZERO
 var mobile_sprinting: bool = false
 
 func setup() -> void:
@@ -111,6 +113,9 @@ func _uses_touch_controls() -> bool:
 func set_mobile_move(value: Vector2) -> void:
 	mobile_move = value.limit_length(1.0)
 
+func set_mobile_look(value: Vector2) -> void:
+	mobile_look = value.limit_length(1.0)
+
 func add_mobile_look(delta: Vector2) -> void:
 	if not input_enabled:
 		return
@@ -170,6 +175,10 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _process(delta: float) -> void:
 	attack_timer = maxf(0.0, attack_timer - delta)
+	if input_enabled and mobile_look.length_squared() > 0.0001:
+		rotate_y(-mobile_look.x * mobile_look_speed * delta)
+		pitch = clamp(pitch - mobile_look.y * mobile_look_speed * delta, -1.35, 1.35)
+		head.rotation.x = pitch
 	if battery_mode == BatteryMode.NEVER_DRAIN:
 		current_battery = maximum_battery
 		flashlight.light_energy = flashlight_energy if flashlight_enabled else 0.0

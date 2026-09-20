@@ -2,17 +2,19 @@ class_name MobileControls
 extends Control
 
 signal move_changed(value: Vector2)
-signal look_changed(delta: Vector2)
+signal look_changed(value: Vector2)
 signal attack_pressed
 signal flashlight_pressed
 signal sprint_changed(pressed: bool)
 
 var move_touch_id: int = -1
 var look_touch_id: int = -1
-var look_position := Vector2.ZERO
 var move_value := Vector2.ZERO
+var look_value := Vector2.ZERO
 var move_origin := Vector2.ZERO
+var look_origin := Vector2.ZERO
 var move_radius: float = 72.0
+var look_radius: float = 72.0
 var action_buttons: Array[Button] = []
 
 func _ready() -> void:
@@ -71,25 +73,30 @@ func _handle_touch(event: InputEventScreenTouch) -> void:
 			move_touch_id = event.index
 			move_origin = event.position
 			_set_move(event.position)
-		elif look_touch_id == -1:
+		elif look_touch_id == -1 and event.position.x >= size.x * 0.45:
 			look_touch_id = event.index
-			look_position = event.position
+			look_origin = event.position
+			_set_look(event.position)
 	else:
 		if event.index == move_touch_id:
 			_reset_move_state()
 		elif event.index == look_touch_id:
-			look_touch_id = -1
-			look_position = Vector2.ZERO
+			_reset_look_state()
 
 func _reset_touch_state() -> void:
 	_reset_move_state()
-	look_touch_id = -1
-	look_position = Vector2.ZERO
+	_reset_look_state()
 
 func _reset_move_state() -> void:
 	move_touch_id = -1
 	move_value = Vector2.ZERO
 	move_changed.emit(move_value)
+	queue_redraw()
+
+func _reset_look_state() -> void:
+	look_touch_id = -1
+	look_value = Vector2.ZERO
+	look_changed.emit(look_value)
 	queue_redraw()
 
 func _is_action_button_position(position: Vector2) -> bool:
@@ -102,14 +109,18 @@ func _handle_drag(event: InputEventScreenDrag) -> void:
 	if event.index == move_touch_id:
 		_set_move(event.position)
 	elif event.index == look_touch_id:
-		var look_delta := event.position - look_position
-		look_position = event.position
-		look_changed.emit(look_delta.limit_length(64.0))
+		_set_look(event.position)
 
 func _set_move(position: Vector2) -> void:
 	var offset := position - move_origin
 	move_value = offset.limit_length(move_radius) / move_radius
 	move_changed.emit(move_value)
+	queue_redraw()
+
+func _set_look(position: Vector2) -> void:
+	var offset := position - look_origin
+	look_value = offset.limit_length(look_radius) / look_radius
+	look_changed.emit(look_value)
 	queue_redraw()
 
 func _draw() -> void:
@@ -118,3 +129,7 @@ func _draw() -> void:
 	draw_circle(joystick_center, move_radius, Color(0.85, 0.75, 0.52, 0.16))
 	var knob_position := joystick_center + move_value * move_radius
 	draw_circle(knob_position, 30.0, Color(1.0, 0.82, 0.42, 0.48))
+	var look_center := look_origin if look_touch_id != -1 else Vector2(minf(size.x - 112.0, size.x * 0.84), size.y - 126.0)
+	draw_circle(look_center, look_radius + 14.0, Color(0.02, 0.02, 0.02, 0.28))
+	draw_circle(look_center, look_radius, Color(0.85, 0.75, 0.52, 0.16))
+	draw_circle(look_center + look_value * look_radius, 30.0, Color(1.0, 0.82, 0.42, 0.48))

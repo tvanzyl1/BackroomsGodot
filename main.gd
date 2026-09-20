@@ -815,9 +815,9 @@ func _on_mobile_move_changed(value: Vector2) -> void:
 	if is_instance_valid(player):
 		player.set_mobile_move(value)
 
-func _on_mobile_look_changed(delta: Vector2) -> void:
+func _on_mobile_look_changed(value: Vector2) -> void:
 	if is_instance_valid(player):
-		player.add_mobile_look(delta)
+		player.set_mobile_look(value)
 
 func _on_mobile_attack_pressed() -> void:
 	if is_instance_valid(player):
