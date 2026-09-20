@@ -12,6 +12,14 @@ A small desktop-first first-person maze prototype for Godot 4.7.2 stable.
 
 The maze, collision, lighting, player, and HUD are created procedurally at runtime. No external assets are required.
 
+## Tablet / Web build
+
+Use the `Web` export preset and host the generated files over HTTPS. Open the generated `index.html` on the iPad in Safari, or enable the PWA option and add the game to the home screen.
+
+On web and mobile builds, use the virtual stick to move, drag the right side to look, and use the `ATTACK`, `LIGHT`, and `RUN` buttons. Desktop keyboard and mouse controls remain available.
+
+For the most compatible iPad build, keep Web export thread support disabled. Test later maze levels on the target iPad and reduce dynamic lighting or maze size if frame rate drops.
+
 To-do list:
 1. [x] Player health bar
 2. [x] On collision with the howler the player should lose 10% health.

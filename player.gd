@@ -45,6 +45,8 @@ var input_enabled: bool = true
 var current_health: float
 var noise_timer: float = 0.0
 var attack_timer: float = 0.0
+var mobile_move := Vector2.ZERO
+var mobile_sprinting: bool = false
 
 func setup() -> void:
 	add_to_group("player")
@@ -100,7 +102,35 @@ func _ready() -> void:
 	health_changed.emit(current_health, maximum_health)
 	battery_changed.emit(current_battery, maximum_battery)
 	_schedule_flashlight_jitter()
-	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	if not _uses_touch_controls():
+		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+
+func _uses_touch_controls() -> bool:
+	return OS.has_feature("web") or OS.has_feature("mobile")
+
+func set_mobile_move(value: Vector2) -> void:
+	mobile_move = value.limit_length(1.0)
+
+func add_mobile_look(delta: Vector2) -> void:
+	if not input_enabled:
+		return
+	rotate_y(-delta.x * mouse_sensitivity)
+	pitch = clamp(pitch - delta.y * mouse_sensitivity, -1.35, 1.35)
+	head.rotation.x = pitch
+
+func set_mobile_sprinting(pressed: bool) -> void:
+	mobile_sprinting = pressed
+
+func mobile_attack() -> void:
+	_try_attack()
+
+func toggle_flashlight() -> void:
+	if current_battery <= 0.0 and battery_mode != BatteryMode.NEVER_DRAIN:
+		flashlight_enabled = false
+		_update_flashlight_visibility()
+		return
+	flashlight_enabled = not flashlight_enabled
+	_update_flashlight_visibility()
 
 func set_battery_mode(mode: int) -> void:
 	battery_mode = clampi(mode, BatteryMode.NEVER_DRAIN, BatteryMode.DRAIN_NO_RECHARGE)
@@ -130,18 +160,11 @@ func restore_health(amount: float) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion and input_enabled:
-		rotate_y(-event.relative.x * mouse_sensitivity)
-		pitch = clamp(pitch - event.relative.y * mouse_sensitivity, -1.35, 1.35)
-		head.rotation.x = pitch
+		add_mobile_look(event.relative)
 	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed and input_enabled:
-		_try_attack()
+		mobile_attack()
 	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F:
-		if current_battery <= 0.0 and battery_mode != BatteryMode.NEVER_DRAIN:
-			flashlight_enabled = false
-			_update_flashlight_visibility()
-			return
-		flashlight_enabled = not flashlight_enabled
-		_update_flashlight_visibility()
+		toggle_flashlight()
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
 		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
@@ -228,8 +251,10 @@ func _physics_process(delta: float) -> void:
 		_update_movement_audio(false, false)
 		return
 	var direction := Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
+	if mobile_move.length_squared() > 0.01:
+		direction = mobile_move
 	var wish := (transform.basis * Vector3(direction.x, 0.0, direction.y)).normalized()
-	var sprinting := Input.is_action_pressed("sprint") and wish.length_squared() > 0.01
+	var sprinting := (Input.is_action_pressed("sprint") or mobile_sprinting) and wish.length_squared() > 0.01
 	_update_movement_audio(sprinting, wish.length_squared() > 0.01)
 	var current_move_speed := move_speed * sprint_multiplier if sprinting else move_speed
 	velocity.x = move_toward(velocity.x, wish.x * current_move_speed, acceleration * delta)

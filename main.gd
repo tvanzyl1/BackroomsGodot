@@ -3,6 +3,7 @@ extends Node3D
 const PLAYER_SCRIPT: Script = preload("res://player.gd")
 const HEALTH_ORB_SCRIPT: Script = preload("res://HealthOrb.gd")
 const FEEDBACK_OVERLAY_SCRIPT: Script = preload("res://FeedbackOverlay.gd")
+const MOBILE_CONTROLS_SCRIPT: Script = preload("res://MobileControls.gd")
 const BASE_MAZE_SIZE: int = 17
 const CELL_SIZE: float = 3.2
 const WALL_HEIGHT: float = 3.0
@@ -40,6 +41,7 @@ var selected_battery_mode: int = MazePlayer.BatteryMode.DRAIN_AND_RECHARGE_WHEN_
 var battery_mode_buttons: Array[Button] = []
 var quit_dialog: ConfirmationDialog
 var new_game_dialog: ConfirmationDialog
+var mobile_controls: MobileControls
 var roof_lights: Array[Dictionary] = []
 var noise_manager: Node
 var game_finished: bool = false
@@ -109,6 +111,8 @@ func new_game(reset_level: bool = true, auto_start: bool = false) -> void:
 	end_overlay.visible = false
 	if is_instance_valid(start_overlay):
 		start_overlay.visible = not auto_start
+	if is_instance_valid(mobile_controls):
+		mobile_controls.visible = auto_start and _uses_touch_controls()
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	seed_label.text = "LEVEL %02d  //  SECTOR %02d  //  SEED %08d" % [level, generation, rng.seed]
 	status_label.text = "Find the way out"
@@ -419,6 +423,8 @@ func _on_player_died() -> void:
 	if is_instance_valid(howler):
 		howler.queue_free()
 		howler = null
+	if is_instance_valid(mobile_controls):
+		mobile_controls.visible = false
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
 func _complete_maze() -> void:
@@ -450,7 +456,13 @@ func _start_game() -> void:
 		howler.set_physics_process(true)
 	if is_instance_valid(start_overlay):
 		start_overlay.visible = false
-	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	if is_instance_valid(mobile_controls):
+		mobile_controls.visible = _uses_touch_controls()
+	if not _uses_touch_controls():
+		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+
+func _uses_touch_controls() -> bool:
+	return OS.has_feature("web") or OS.has_feature("mobile")
 
 func _spawn_howler() -> void:
 	var howler_scene: PackedScene = preload("res://Howler.tscn")
@@ -650,6 +662,8 @@ func _create_hud() -> void:
 	layer.add_child(howler_health_bar)
 	var help := Label.new()
 	help.text = "WASD  MOVE     MOUSE  LOOK     R  NEW GAME     Q  QUIT"
+	if _uses_touch_controls():
+		help.text = "DRAG TO LOOK     USE THE TOUCH CONTROLS"
 	help.position = Vector2(24.0, 670.0)
 	help.add_theme_color_override("font_color", Color(0.62, 0.56, 0.42, 0.9))
 	help.add_theme_font_size_override("font_size", 12)
@@ -787,6 +801,35 @@ func _create_hud() -> void:
 	new_game_dialog.cancel_button_text = "Stay"
 	new_game_dialog.confirmed.connect(new_game)
 	layer.add_child(new_game_dialog)
+	mobile_controls = MOBILE_CONTROLS_SCRIPT.new()
+	mobile_controls.name = "MobileControls"
+	mobile_controls.visible = false
+	mobile_controls.move_changed.connect(_on_mobile_move_changed)
+	mobile_controls.look_changed.connect(_on_mobile_look_changed)
+	mobile_controls.attack_pressed.connect(_on_mobile_attack_pressed)
+	mobile_controls.flashlight_pressed.connect(_on_mobile_flashlight_pressed)
+	mobile_controls.sprint_changed.connect(_on_mobile_sprint_changed)
+	layer.add_child(mobile_controls)
+
+func _on_mobile_move_changed(value: Vector2) -> void:
+	if is_instance_valid(player):
+		player.set_mobile_move(value)
+
+func _on_mobile_look_changed(delta: Vector2) -> void:
+	if is_instance_valid(player):
+		player.add_mobile_look(delta)
+
+func _on_mobile_attack_pressed() -> void:
+	if is_instance_valid(player):
+		player.mobile_attack()
+
+func _on_mobile_flashlight_pressed() -> void:
+	if is_instance_valid(player):
+		player.toggle_flashlight()
+
+func _on_mobile_sprint_changed(pressed: bool) -> void:
+	if is_instance_valid(player):
+		player.set_mobile_sprinting(pressed)
 
 func _selected_start_mode(mode: int) -> void:
 	selected_battery_mode = clampi(mode, MazePlayer.BatteryMode.NEVER_DRAIN, MazePlayer.BatteryMode.DRAIN_NO_RECHARGE)
