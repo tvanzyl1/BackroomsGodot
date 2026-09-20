@@ -1,0 +1,1 @@
+godot --headless --path . --export-release "Web" "WebGame/index.html"

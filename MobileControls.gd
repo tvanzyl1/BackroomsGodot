@@ -129,7 +129,7 @@ func _draw() -> void:
 	draw_circle(joystick_center, move_radius, Color(0.85, 0.75, 0.52, 0.16))
 	var knob_position := joystick_center + move_value * move_radius
 	draw_circle(knob_position, 30.0, Color(1.0, 0.82, 0.42, 0.48))
-	var look_center := look_origin if look_touch_id != -1 else Vector2(minf(size.x - 112.0, size.x * 0.84), size.y - 126.0)
-	draw_circle(look_center, look_radius + 14.0, Color(0.02, 0.02, 0.02, 0.28))
-	draw_circle(look_center, look_radius, Color(0.85, 0.75, 0.52, 0.16))
-	draw_circle(look_center + look_value * look_radius, 30.0, Color(1.0, 0.82, 0.42, 0.48))
+	var look_center := look_origin if look_touch_id != -1 else Vector2(maxf(look_radius + 20.0, size.x - 300.0), size.y - 126.0)
+	draw_circle(look_center, look_radius + 14.0, Color(0.02, 0.02, 0.02, 0.38))
+	draw_circle(look_center, look_radius, Color(0.85, 0.75, 0.52, 0.24))
+	draw_circle(look_center + look_value * look_radius, 30.0, Color(1.0, 0.82, 0.42, 0.68))
