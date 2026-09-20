@@ -50,3 +50,6 @@ To-do list:
 17. [x] Howler increasing aggressiveness
 17.1 [x] As the player progresses through levels, the Howler becomes more aggressive, with less stalking and more chasing.
 17.2 [x] The player can run using the `shift` key, which increases speed and movement noise.
+18. [x] Player Walking and running sounds
+18.1. [x] Implement walking sounds using Audio/PlayerWalking.mp3
+18.2. [x] Implement running sound using Audio/PlayerRunning.mp3

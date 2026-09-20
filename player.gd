@@ -31,6 +31,8 @@ enum BatteryMode {
 var head: Node3D
 var camera: Camera3D
 var flashlight: SpotLight3D
+var walking_audio: AudioStreamPlayer3D
+var running_audio: AudioStreamPlayer3D
 var flashlight_enabled: bool = true
 var flashlight_energy: float = 5.0
 var current_battery: float = 100.0
@@ -64,6 +66,22 @@ func setup() -> void:
 	flashlight.shadow_enabled = true
 	flashlight.position = Vector3(0.0, -0.05, -0.12)
 	camera.add_child(flashlight)
+	walking_audio = AudioStreamPlayer3D.new()
+	walking_audio.name = "WalkingAudio"
+	walking_audio.stream = load("res://Audio/PlayerWalking.mp3")
+	walking_audio.volume_db = -6.0
+	walking_audio.max_distance = 18.0
+	add_child(walking_audio)
+	if walking_audio.stream is AudioStreamMP3:
+		(walking_audio.stream as AudioStreamMP3).loop = true
+	running_audio = AudioStreamPlayer3D.new()
+	running_audio.name = "RunningAudio"
+	running_audio.stream = load("res://Audio/PlayerRunning.mp3")
+	running_audio.volume_db = -4.0
+	running_audio.max_distance = 18.0
+	add_child(running_audio)
+	if running_audio.stream is AudioStreamMP3:
+		(running_audio.stream as AudioStreamMP3).loop = true
 	var collision := CollisionShape3D.new()
 	var capsule := CapsuleShape3D.new()
 	capsule.radius = 0.32
@@ -207,10 +225,12 @@ func _try_attack() -> void:
 
 func _physics_process(delta: float) -> void:
 	if not input_enabled:
+		_update_movement_audio(false, false)
 		return
 	var direction := Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
 	var wish := (transform.basis * Vector3(direction.x, 0.0, direction.y)).normalized()
 	var sprinting := Input.is_action_pressed("sprint") and wish.length_squared() > 0.01
+	_update_movement_audio(sprinting, wish.length_squared() > 0.01)
 	var current_move_speed := move_speed * sprint_multiplier if sprinting else move_speed
 	velocity.x = move_toward(velocity.x, wish.x * current_move_speed, acceleration * delta)
 	velocity.z = move_toward(velocity.z, wish.z * current_move_speed, acceleration * delta)
@@ -225,3 +245,17 @@ func _physics_process(delta: float) -> void:
 				movement_loudness *= sprint_noise_multiplier
 			noise_manager.emit_noise(global_position, movement_loudness, &"player_movement")
 		noise_timer = 0.45
+
+func _update_movement_audio(sprinting: bool, moving: bool) -> void:
+	if not moving:
+		walking_audio.stop()
+		running_audio.stop()
+		return
+	if sprinting:
+		walking_audio.stop()
+		if not running_audio.playing:
+			running_audio.play()
+	else:
+		running_audio.stop()
+		if not walking_audio.playing:
+			walking_audio.play()
